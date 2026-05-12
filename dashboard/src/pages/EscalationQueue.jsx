@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Eye } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Zap } from 'lucide-react'
 import StatusBadge from '../components/StatusBadge'
 import { fetchEscalations } from '../api/client'
-import { format } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 
-const ESCALATION_REASON_LABELS = {
-  emergency: { label: '🚨 Emergency', cls: 'badge-red' },
-  patient_requested: { label: 'Patient Request', cls: 'badge-amber' },
-  max_clarifications: { label: 'Max Retries', cls: 'badge-gray' },
-  technical_failure: { label: 'Technical', cls: 'badge-gray' },
-  mental_health: { label: '⚠ Mental Health', cls: 'badge-purple' },
+const REASON_META = {
+  emergency:         { label: 'Emergency', cls: 'badge-red',    icon: '🚨' },
+  patient_requested: { label: 'Patient Request', cls: 'badge-amber', icon: '👤' },
+  max_clarifications:{ label: 'Max Retries', cls: 'badge-gray', icon: '🔄' },
+  technical_failure: { label: 'Technical', cls: 'badge-gray',   icon: '⚙️' },
+  mental_health:     { label: 'Mental Health', cls: 'badge-purple', icon: '🧠' },
 }
+
+const DEMO = [
+  { id: 'e1', patient_phone: '+919876543210', language: 'en-IN', escalation_reason: 'emergency', started_at: new Date(Date.now() - 120000).toISOString(), duration_seconds: 38, turn_count: 2, outcome: 'escalated' },
+  { id: 'e2', patient_phone: '+919988776655', language: 'hi-IN', escalation_reason: 'mental_health', started_at: new Date(Date.now() - 1800000).toISOString(), duration_seconds: 95, turn_count: 6, outcome: 'escalated' },
+  { id: 'e3', patient_phone: '+919123456789', language: 'mr-IN', escalation_reason: 'patient_requested', started_at: new Date(Date.now() - 7200000).toISOString(), duration_seconds: 112, turn_count: 4, outcome: 'escalated' },
+]
 
 export default function EscalationQueue() {
   const navigate = useNavigate()
@@ -23,68 +29,83 @@ export default function EscalationQueue() {
     const load = async () => {
       try {
         const data = await fetchEscalations()
-        setCalls(data.calls)
-        setTotal(data.total)
+        setCalls(data.calls); setTotal(data.total)
       } catch {
-        // Demo
-        setCalls([
-          { id: 'esc-1', patient_phone: '+919876543210', language: 'en-IN', escalation_reason: 'emergency', started_at: new Date().toISOString(), duration_seconds: 45, turn_count: 2 },
-          { id: 'esc-2', patient_phone: '+919988776655', language: 'hi-IN', escalation_reason: 'patient_requested', started_at: new Date(Date.now() - 3600000).toISOString(), duration_seconds: 120, turn_count: 5 },
-          { id: 'esc-3', patient_phone: '+919123456789', language: 'mr-IN', escalation_reason: 'max_clarifications', started_at: new Date(Date.now() - 7200000).toISOString(), duration_seconds: 90, turn_count: 7 },
-        ])
-        setTotal(3)
-      } finally {
-        setLoading(false)
-      }
+        setCalls(DEMO); setTotal(DEMO.length)
+      } finally { setLoading(false) }
     }
     load()
   }, [])
 
   return (
-    <div className="fade-in">
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Escalation Queue</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 4 }}>
-          {total} calls transferred to human staff
-        </p>
+    <div className="anim-fade-up">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1 className="page-title">Escalation Queue</h1>
+          <p className="page-sub">{total} calls transferred to human staff</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Zap size={13} color="var(--red)" />
+          <span style={{ fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{total} requiring attention</span>
+        </div>
       </div>
 
-      <div className="card" style={{ padding: 0 }}>
-        <div className="table-wrapper">
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Phone</th>
-                <th>Language</th>
-                <th>Reason</th>
+                <th>Lang</th>
+                <th>Escalation Reason</th>
                 <th>Duration</th>
                 <th>Turns</th>
-                <th>Time</th>
-                <th></th>
+                <th>When</th>
+                <th style={{ width: 40 }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Loading...</td></tr>
+                Array.from({ length: 3 }, (_, i) => (
+                  <tr key={i}>
+                    {Array.from({ length: 7 }, (_, j) => (
+                      <td key={j}><div className="skeleton" style={{ height: 14, width: '75%' }} /></td>
+                    ))}
+                  </tr>
+                ))
               ) : calls.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>No escalations found</td></tr>
-              ) : calls.map(call => {
-                const reason = ESCALATION_REASON_LABELS[call.escalation_reason] || { label: call.escalation_reason, cls: 'badge-gray' }
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-3)' }}>
+                    No escalations — great news!
+                  </td>
+                </tr>
+              ) : calls.map((call, idx) => {
+                const rm = REASON_META[call.escalation_reason] || { label: call.escalation_reason, cls: 'badge-gray', icon: '?' }
                 return (
-                  <tr key={call.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{call.patient_phone}</td>
+                  <tr
+                    key={call.id}
+                    className="clickable anim-fade-up"
+                    style={{ animationDelay: `${idx * 40}ms` }}
+                    onClick={() => navigate(`/calls/${call.id}`)}
+                  >
+                    <td><span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{call.patient_phone}</span></td>
                     <td><StatusBadge type="language" value={call.language} /></td>
-                    <td><span className={`badge ${reason.cls}`}>{reason.label}</span></td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
+                    <td>
+                      <span className={`badge ${rm.cls}`}>
+                        <span>{rm.icon}</span>
+                        {rm.label}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>
                       {call.duration_seconds ? `${Math.floor(call.duration_seconds / 60)}m ${call.duration_seconds % 60}s` : '—'}
                     </td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{call.turn_count}</td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
-                      {call.started_at ? format(new Date(call.started_at), 'dd MMM, HH:mm') : '—'}
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{call.turn_count}</td>
+                    <td style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                      {call.started_at ? formatDistanceToNow(new Date(call.started_at), { addSuffix: true }) : '—'}
                     </td>
                     <td>
-                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => navigate(`/calls/${call.id}`)}>
-                        <Eye size={13} />
+                      <button className="btn btn-ghost btn-icon" onClick={e => { e.stopPropagation(); navigate(`/calls/${call.id}`) }}>
+                        <ExternalLink size={12} />
                       </button>
                     </td>
                   </tr>

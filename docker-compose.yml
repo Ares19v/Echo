@@ -44,7 +44,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://echo:echo@postgres:5432/echo
+      DATABASE_URL: postgresql+psycopg://echo:echo@postgres:5432/echo
       REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
@@ -87,7 +87,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://echo:echo@postgres:5432/echo
+      DATABASE_URL: postgresql+psycopg://echo:echo@postgres:5432/echo
       REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:

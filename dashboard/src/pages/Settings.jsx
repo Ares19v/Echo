@@ -1,39 +1,53 @@
 import React, { useState, useEffect } from 'react'
 import { fetchConfig, fetchFlags, patchFlag } from '../api/client'
+import { Settings2 } from 'lucide-react'
 
-function Toggle({ enabled, onChange }) {
+const FLAG_META = {
+  triage_enabled:               { label: 'Symptom Triage',        desc: 'Allows patients to describe symptoms for intake assessment.' },
+  lab_lookup_enabled:           { label: 'Lab Report Lookup',      desc: 'Enables patients to check their lab report status.' },
+  prescription_lookup_enabled:  { label: 'Prescription Lookup',    desc: 'Allows patients to hear their active prescriptions.' },
+  registration_enabled:         { label: 'New Patient Registration',desc: 'Accepts draft registrations for new patients.' },
+  faq_enabled:                  { label: 'FAQ Search',             desc: 'Answers common clinic questions via AI search.' },
+  sms_summary_enabled:          { label: 'Post-Call SMS',          desc: 'Sends appointment confirmation SMS (requires Exotel).' },
+}
+
+function Toggle({ on, onChange, saving }) {
   return (
     <button
-      onClick={() => onChange(!enabled)}
-      style={{
-        width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
-        background: enabled ? 'var(--accent)' : 'var(--bg-border)',
-        position: 'relative', transition: 'background 0.2s',
-      }}
+      className={`toggle${on ? ' on' : ''}`}
+      onClick={() => onChange(!on)}
+      disabled={saving}
+      style={{ opacity: saving ? 0.5 : 1 }}
     >
-      <span style={{
-        position: 'absolute', top: 3, left: enabled ? 22 : 3,
-        width: 18, height: 18, borderRadius: '50%', background: '#fff',
-        transition: 'left 0.2s',
-      }} />
+      <div className="toggle-thumb" />
     </button>
   )
 }
 
-const FLAG_LABELS = {
-  triage_enabled: { label: 'Symptom Triage', desc: 'Allow patients to describe symptoms for intake' },
-  lab_lookup_enabled: { label: 'Lab Report Lookup', desc: 'Allow patients to check report status' },
-  prescription_lookup_enabled: { label: 'Prescription Lookup', desc: 'Show active prescriptions via voice' },
-  registration_enabled: { label: 'New Patient Registration', desc: 'Accept new patient draft registrations' },
-  faq_enabled: { label: 'FAQ Search', desc: 'Answer common clinic questions' },
-  sms_summary_enabled: { label: 'Post-Call SMS', desc: 'Send appointment confirmation SMS (requires Exotel)' },
+function ConfigItem({ label, value }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>
+        {label}
+      </div>
+      <div style={{
+        fontFamily: 'var(--font-mono)', fontSize: 12,
+        color: typeof value === 'string' && value.startsWith('✗') ? 'var(--red)'
+             : typeof value === 'string' && value.startsWith('✓') ? 'var(--green)'
+             : 'var(--text-1)',
+        fontWeight: 500,
+      }}>
+        {value}
+      </div>
+    </div>
+  )
 }
 
 export default function Settings() {
   const [config, setConfig] = useState(null)
   const [flags, setFlags] = useState({})
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
@@ -42,8 +56,16 @@ export default function Settings() {
         setConfig(cfg)
         setFlags(fl.flags || {})
       } catch {
-        setConfig({ app_name: 'Echo', version: '1.0.0', environment: 'development', hms_provider: 'mock', gemini_model: 'gemini-2.5-flash', gemini_ready: false, sarvam_ready: false, livekit_ready: false, exotel_ready: false })
-        setFlags({ triage_enabled: true, lab_lookup_enabled: true, prescription_lookup_enabled: true, registration_enabled: true, faq_enabled: true, sms_summary_enabled: false })
+        setConfig({
+          version: '1.0.0', environment: 'development', hms_provider: 'mock',
+          gemini_model: 'gemini-2.5-flash', gemini_ready: false,
+          sarvam_ready: false, livekit_ready: false, exotel_ready: false,
+        })
+        setFlags({
+          triage_enabled: true, lab_lookup_enabled: true,
+          prescription_lookup_enabled: true, registration_enabled: true,
+          faq_enabled: true, sms_summary_enabled: false,
+        })
       } finally {
         setLoading(false)
       }
@@ -57,62 +79,86 @@ export default function Settings() {
     try {
       await patchFlag(flag, val)
     } catch {
-      setFlags(f => ({ ...f, [flag]: !val })) // revert on failure
+      setFlags(f => ({ ...f, [flag]: !val }))
     } finally {
       setSaving(null)
     }
   }
 
-  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: 40 }}>Loading settings...</div>
-
   return (
-    <div className="fade-in">
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Settings</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 4 }}>
-          Runtime configuration and feature toggles
-        </p>
+    <div className="anim-fade-up">
+      <div className="page-header">
+        <h1 className="page-title">Settings</h1>
+        <p className="page-sub">Runtime configuration and feature flags</p>
       </div>
 
       {/* Runtime Config */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Runtime Configuration</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {config && Object.entries({
-            'App Version': config.version,
-            'Environment': config.environment,
-            'HMS Provider': config.hms_provider,
-            'LLM Model': config.gemini_model,
-            'Gemini': config.gemini_ready ? '✓ Ready' : '✗ Not configured',
-            'Sarvam AI': config.sarvam_ready ? '✓ Ready' : '✗ Not configured',
-            'LiveKit': config.livekit_ready ? '✓ Ready' : '✗ Not configured',
-            'Exotel': config.exotel_ready ? '✓ Ready' : '✗ Not configured',
-          }).map(([key, val]) => (
-            <div key={key}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{key}</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: typeof val === 'string' && val.startsWith('✗') ? 'var(--accent-red)' : val.startsWith?.('✓') ? 'var(--accent-green)' : 'var(--text-primary)' }}>{val}</div>
-            </div>
-          ))}
+      <div className="card-glow anim-fade-up" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+          <Settings2 size={14} color="var(--blue)" />
+          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-1)' }}>Runtime Configuration</span>
+          <span style={{ marginLeft: 'auto' }} className="badge badge-gray">Read-only</span>
         </div>
+
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="skeleton" style={{ height: 36 }} />
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            <ConfigItem label="Version"     value={config?.version} />
+            <ConfigItem label="Environment" value={config?.environment} />
+            <ConfigItem label="HMS"         value={config?.hms_provider} />
+            <ConfigItem label="LLM Model"   value={config?.gemini_model} />
+            <ConfigItem label="Gemini"      value={config?.gemini_ready ? '✓ Ready' : '✗ Not configured'} />
+            <ConfigItem label="Sarvam AI"   value={config?.sarvam_ready ? '✓ Ready' : '✗ Not configured'} />
+            <ConfigItem label="LiveKit"     value={config?.livekit_ready ? '✓ Ready' : '✗ Not configured'} />
+            <ConfigItem label="Exotel"      value={config?.exotel_ready ? '✓ Ready' : '✗ Not configured'} />
+          </div>
+        )}
       </div>
 
       {/* Feature Flags */}
-      <div className="card">
-        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Feature Toggles</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {Object.entries(FLAG_LABELS).map(([flag, { label, desc }]) => (
-            <div key={flag} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid var(--bg-border)' }}>
+      <div className="card anim-fade-up" style={{ animationDelay: '80ms' }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-1)', marginBottom: 4 }}>Feature Flags</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 20 }}>
+          Toggle agent capabilities without restarting the server.
+        </div>
+
+        {loading ? (
+          Array.from({ length: 6 }, (_, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
+              <div className="skeleton" style={{ height: 32, width: 240 }} />
+              <div className="skeleton" style={{ height: 22, width: 40 }} />
+            </div>
+          ))
+        ) : (
+          Object.entries(FLAG_META).map(([flag, { label, desc }], i) => (
+            <div
+              key={flag}
+              className="anim-fade-up"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 0',
+                borderBottom: i < Object.keys(FLAG_META).length - 1 ? '1px solid var(--border)' : 'none',
+                animationDelay: `${100 + i * 40}ms`,
+              }}
+            >
               <div>
-                <div style={{ fontWeight: 500, fontSize: 13 }}>{label}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{desc}</div>
+                <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--text-1)', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{desc}</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {saving === flag && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Saving...</span>}
-                <Toggle enabled={!!flags[flag]} onChange={val => handleToggle(flag, val)} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                {saving === flag && (
+                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Saving…</span>
+                )}
+                <Toggle on={!!flags[flag]} onChange={val => handleToggle(flag, val)} saving={saving === flag} />
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
       </div>
     </div>
   )

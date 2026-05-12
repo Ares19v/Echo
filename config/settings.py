@@ -56,6 +56,18 @@ class Settings(BaseSettings):
     )
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
+    @field_validator("ALLOWED_ORIGINS", "SUPPORTED_LANGUAGES", mode="before")
+    @classmethod
+    def _parse_list(cls, v):
+        if isinstance(v, str):
+            # Accept both JSON ["a","b"] and CSV a,b
+            v = v.strip()
+            if v.startswith("["):
+                import json
+                return json.loads(v)
+            return [i.strip() for i in v.split(",") if i.strip()]
+        return v
+
     # ─── HMS / EHR ──────────────────────────────────────────────────────────
     HMS_PROVIDER: HMSProvider = HMSProvider.MOCK
     # Eka Care (only used when HMS_PROVIDER=eka_care)
@@ -90,7 +102,7 @@ class Settings(BaseSettings):
     EXOTEL_BASE_URL: str = "https://api.exotel.com/v1"
 
     # ─── Database ───────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://echo:echo@localhost:5432/echo"
+    DATABASE_URL: str = "postgresql+psycopg://echo:echo@localhost:5432/echo"
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
 

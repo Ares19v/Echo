@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, Bot } from 'lucide-react'
+import { ArrowLeft, User, Bot, Clock, Mic, Hash } from 'lucide-react'
 import { fetchCall } from '../api/client'
 import { format } from 'date-fns'
 import StatusBadge from '../components/StatusBadge'
@@ -8,21 +8,34 @@ import StatusBadge from '../components/StatusBadge'
 const DEMO_CALL = {
   id: 'demo-1', patient_phone: '+919876543210',
   language: 'en-IN', primary_intent: 'appointment_book',
-  outcome: 'resolved', duration_seconds: 187, turn_count: 6,
+  outcome: 'resolved', duration_seconds: 187, turn_count: 10,
   started_at: new Date().toISOString(), consent_given: true,
-  summary: 'Patient booked appointment with Dr. Arjun Sharma for Friday at 10:00 AM.',
+  sentiment_score: 0.78,
+  summary: "Patient successfully booked an appointment with Dr. Arjun Sharma for Friday at 10:00 AM. Patient was satisfied with the service.",
   transcript: [
-    { role: 'assistant', text: 'Namaste! You've reached the clinic. This call is assisted by an AI. Say "yes" to continue.', language: 'en-IN' },
+    { role: 'assistant', text: "Hello! You've reached the clinic. This call is assisted by Echo AI. Do you consent to continue?", language: 'en-IN' },
     { role: 'user', text: 'Yes, please.', language: 'en-IN' },
-    { role: 'assistant', text: 'Welcome back! How can I help you today?', language: 'en-IN' },
+    { role: 'assistant', text: "Welcome back! How can I help you today?", language: 'en-IN' },
     { role: 'user', text: 'I need to book an appointment with Dr. Sharma for this Friday.', language: 'en-IN' },
-    { role: 'assistant', text: 'Of course! Let me check Dr. Sharma\'s availability for this Friday. One moment...', language: 'en-IN' },
+    { role: 'assistant', text: "Of course! Let me check Dr. Sharma's availability for this Friday. One moment...", language: 'en-IN' },
     { role: 'assistant', text: 'Dr. Arjun Sharma has slots available at 10:00 AM and 3:00 PM this Friday. Which works better for you?', language: 'en-IN' },
     { role: 'user', text: '10 AM please.', language: 'en-IN' },
-    { role: 'assistant', text: 'Perfect! I\'ve booked your appointment with Dr. Arjun Sharma on Friday at 10:00 AM. You\'ll receive a confirmation SMS shortly. Is there anything else I can help you with?', language: 'en-IN' },
-    { role: 'user', text: 'No, that\'s all. Thank you.', language: 'en-IN' },
-    { role: 'assistant', text: 'You\'re welcome! Take care, and we\'ll see you on Friday.', language: 'en-IN' },
+    { role: 'assistant', text: "Perfect! I've booked your appointment with Dr. Arjun Sharma on Friday at 10:00 AM. You'll receive a confirmation SMS shortly. Is there anything else I can help you with?", language: 'en-IN' },
+    { role: 'user', text: "No, that's all. Thank you.", language: 'en-IN' },
+    { role: 'assistant', text: "You're welcome! Take care, and we'll see you on Friday.", language: 'en-IN' },
   ],
+}
+
+function MetaItem({ icon: Icon, label, value, valueColor }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>
+        <Icon size={10} />
+        {label}
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: valueColor || 'var(--text-1)' }}>{value}</div>
+    </div>
+  )
 }
 
 export default function TranscriptViewer() {
@@ -45,77 +58,96 @@ export default function TranscriptViewer() {
     load()
   }, [id])
 
-  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: 40 }}>Loading transcript...</div>
-  if (!call) return <div style={{ color: 'var(--accent-red)', padding: 40 }}>Call not found.</div>
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ height: 24, width: 120 }} className="skeleton" />
+      <div style={{ height: 100 }} className="skeleton" />
+      <div style={{ height: 400 }} className="skeleton" />
+    </div>
+  )
+
+  if (!call) return (
+    <div style={{ color: 'var(--red)', padding: 40, textAlign: 'center' }}>Call not found.</div>
+  )
+
+  const mins = Math.floor((call.duration_seconds ?? 0) / 60)
+  const secs = (call.duration_seconds ?? 0) % 60
+  const sentPct = Math.round((call.sentiment_score ?? 0.5) * 100)
 
   return (
-    <div className="fade-in">
+    <div className="anim-fade-up">
       <button className="btn btn-ghost" style={{ marginBottom: 20 }} onClick={() => navigate('/calls')}>
-        <ArrowLeft size={14} /> Back to Call Log
+        <ArrowLeft size={13} /> Back
       </button>
 
-      {/* Call metadata */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-          {[
-            ['Phone', call.patient_phone],
-            ['Language', <StatusBadge key="l" type="language" value={call.language} />],
-            ['Outcome', <StatusBadge key="o" type="outcome" value={call.outcome} />],
-            ['Duration', call.duration_seconds ? `${Math.floor(call.duration_seconds / 60)}m ${call.duration_seconds % 60}s` : '—'],
-            ['Intent', (call.primary_intent || '—').replace(/_/g, ' ')],
-            ['Turns', call.turn_count],
-            ['Time', call.started_at ? format(new Date(call.started_at), 'dd MMM yyyy, HH:mm') : '—'],
-            ['Consent', call.consent_given ? '✓ Given' : '✗ Not given'],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{value}</div>
+      {/* Call Metadata */}
+      <div className="card-glow" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: call.summary ? 20 : 0 }}>
+          <MetaItem icon={Mic}   label="Phone"    value={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{call.patient_phone}</span>} />
+          <MetaItem icon={Hash}  label="Outcome"  value={<StatusBadge type="outcome" value={call.outcome} />} />
+          <MetaItem icon={Clock} label="Duration" value={`${mins}m ${secs}s`} />
+          <MetaItem icon={Hash}  label="Language" value={<StatusBadge type="language" value={call.language} />} />
+          <MetaItem icon={Hash}  label="Intent"   value={(call.primary_intent || '—').replace(/_/g, ' ')} />
+          <MetaItem icon={Hash}  label="Turns"    value={call.turn_count} />
+          <MetaItem icon={Hash}  label="Consent"  value={call.consent_given ? '✓ Captured' : '✗ Not given'} valueColor={call.consent_given ? 'var(--green)' : 'var(--red)'} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>Sentiment</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <div style={{ flex: 1, height: 4, background: 'var(--surface-2)', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{
+                  width: `${sentPct}%`, height: '100%', borderRadius: 999,
+                  background: sentPct >= 70 ? 'var(--green)' : sentPct >= 45 ? 'var(--amber)' : 'var(--red)',
+                  transition: 'width 0.6s var(--ease-out)',
+                }} />
+              </div>
+              <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-1)', fontWeight: 600 }}>{sentPct}%</span>
             </div>
-          ))}
+          </div>
         </div>
+
         {call.summary && (
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--bg-border)' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Summary</div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{call.summary}</p>
+          <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600, marginBottom: 8 }}>
+              AI Summary
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.7 }}>{call.summary}</p>
           </div>
         )}
       </div>
 
       {/* Transcript */}
       <div className="card">
-        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20 }}>Conversation Transcript</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 20, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Transcript · {call.turn_count} turns
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {(call.transcript || []).map((turn, i) => (
-            <div key={i} style={{
-              display: 'flex',
-              gap: 12,
-              flexDirection: turn.role === 'user' ? 'row-reverse' : 'row',
-              alignItems: 'flex-start',
-            }}>
-              <div style={{
-                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                background: turn.role === 'user' ? 'rgba(139,92,246,0.2)' : 'rgba(59,130,246,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {turn.role === 'user' ? <User size={14} color="#8b5cf6" /> : <Bot size={14} color="#3b82f6" />}
+            <div
+              key={i}
+              className={`bubble-wrap${turn.role === 'user' ? ' user' : ''} anim-fade-up`}
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              <div className={`bubble-avatar ${turn.role === 'user' ? 'user' : 'agent'}`}>
+                {turn.role === 'user'
+                  ? <User size={13} color="var(--purple)" />
+                  : <Bot size={13} color="var(--blue)" />}
               </div>
-              <div style={{
-                maxWidth: '70%',
-                background: turn.role === 'user' ? 'rgba(139,92,246,0.1)' : 'var(--bg-elevated)',
-                border: `1px solid ${turn.role === 'user' ? 'rgba(139,92,246,0.2)' : 'var(--bg-border)'}`,
-                borderRadius: 10,
-                padding: '10px 14px',
-              }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
-                  {turn.role === 'user' ? 'Patient' : 'Echo'}
-                  {turn.language && <span style={{ marginLeft: 8 }}>{turn.language === 'en-IN' ? 'EN' : turn.language === 'hi-IN' ? 'HI' : 'MR'}</span>}
+              <div className={`bubble ${turn.role === 'user' ? 'user' : 'agent'}`}>
+                <div className="bubble-meta">
+                  {turn.role === 'user' ? 'Patient' : 'Echo AI'}
+                  {turn.language && (
+                    <span style={{ marginLeft: 8, opacity: 0.6 }}>
+                      {turn.language === 'en-IN' ? 'EN' : turn.language === 'hi-IN' ? 'HI' : 'MR'}
+                    </span>
+                  )}
                 </div>
-                <p style={{ fontSize: 13, lineHeight: 1.6 }}>{turn.text}</p>
+                {turn.text}
               </div>
             </div>
           ))}
+
           {(!call.transcript || call.transcript.length === 0) && (
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No transcript available.</p>
+            <p style={{ color: 'var(--text-3)', textAlign: 'center', padding: 32 }}>No transcript available.</p>
           )}
         </div>
       </div>

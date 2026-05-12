@@ -28,7 +28,7 @@ jobs:
 
     env:
       HMS_PROVIDER: mock
-      DATABASE_URL: postgresql+asyncpg://echo:echo@localhost:5432/echo_test
+      DATABASE_URL: postgresql+psycopg://echo:echo@localhost:5432/echo_test
       REDIS_URL: redis://localhost:6379/0
       ENVIRONMENT: testing
       API_SECRET_KEY: ci-test-secret

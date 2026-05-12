@@ -4,14 +4,9 @@ import Sidebar from './Sidebar'
 
 export default function Layout() {
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div className="app-shell">
       <Sidebar />
-      <main style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '28px 32px',
-        background: 'var(--bg-base)',
-      }}>
+      <main className="main-content">
         <Outlet />
       </main>
     </div>
