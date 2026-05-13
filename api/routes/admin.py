@@ -50,3 +50,23 @@ async def get_config() -> dict:
         "audio_retention_days": settings.AUDIO_RETENTION_DAYS,
         "transcript_retention_days": settings.TRANSCRIPT_RETENTION_DAYS,
     }
+
+
+@router.post("/simulator/token")
+async def get_simulator_token(room_name: str = "echo-demo", identity: str = "admin") -> dict:
+    """
+    Generate a LiveKit access token for the browser-based Call Simulator.
+    The browser uses this token to join a LiveKit room where Echo AI picks up.
+    """
+    from livekit.api import AccessToken, VideoGrants
+    token = (
+        AccessToken(settings.LIVEKIT_API_KEY, settings.LIVEKIT_API_SECRET)
+        .with_identity(identity)
+        .with_name("Admin (Simulator)")
+        .with_grants(VideoGrants(room_join=True, room=room_name))
+    )
+    return {
+        "token": token.to_jwt(),
+        "room": room_name,
+        "livekit_url": settings.LIVEKIT_URL,
+    }

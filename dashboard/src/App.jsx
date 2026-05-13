@@ -7,6 +7,7 @@ import TranscriptViewer from './pages/TranscriptViewer'
 import EscalationQueue from './pages/EscalationQueue'
 import SystemHealth from './pages/SystemHealth'
 import Settings from './pages/Settings'
+import Simulator from './pages/Simulator'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="escalations" element={<EscalationQueue />} />
           <Route path="health"      element={<SystemHealth />} />
           <Route path="settings"    element={<Settings />} />
+          <Route path="simulator"   element={<Simulator />} />
         </Route>
       </Routes>
     </BrowserRouter>
