@@ -57,12 +57,14 @@ echo.
 echo  ══════════════════════════════════════════════
 echo   Echo is running!
 echo.
-echo   Dashboard:  http://localhost:5173
-echo   API Docs:   http://localhost:8000/docs
-echo   API Health: http://localhost:8000/health
+echo   Dashboard:    http://localhost:5173  (or :5174)
+echo   Simulator:    http://localhost:5173/simulator
+echo   API Docs:     http://localhost:8000/docs
+echo   API Health:   http://localhost:8000/health
+echo   Agent Worker: http://localhost:8081 (internal)
 echo.
-echo   Press any key to open the dashboard...
+echo   Open the Simulator page to talk to Echo AI!
 echo  ══════════════════════════════════════════════
 echo.
 pause >nul
-start "" http://localhost:5173
+start "" http://localhost:5173/simulator
