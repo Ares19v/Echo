@@ -1,10 +1,9 @@
 """Echo – pytest fixtures shared across all tests."""
 import pytest
-import pytest_asyncio
-from agent.hms.mock_adapter import MockHMSAdapter
+
 from agent.core.dialogue_manager import DialogueState
 from agent.core.escalation import EscalationEngine
-from agent.core.language_router import Lang
+from agent.hms.mock_adapter import MockHMSAdapter
 
 
 @pytest.fixture

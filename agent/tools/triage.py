@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -42,7 +41,7 @@ def score_triage(
     symptoms: list[str],
     duration: str,
     severity: int,
-    patient_age: Optional[int] = None,
+    patient_age: int | None = None,
 ) -> TriageResult:
     """
     Compute a risk score using a simplified ICMR-aligned algorithm.
@@ -111,7 +110,7 @@ async def run_triage(
     symptoms: list[str],
     duration: str,
     severity: int,
-    patient_age: Optional[int] = None,
+    patient_age: int | None = None,
 ) -> dict:
     """Tool entry-point: run triage and return a serialisable result."""
     result = score_triage(chief_complaint, symptoms, duration, severity, patient_age)

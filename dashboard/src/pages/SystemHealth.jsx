@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { fetchHealthStatus } from '../api/client'
 
 const SERVICE_META = {

@@ -10,7 +10,6 @@ import hmac
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -43,7 +42,6 @@ async def _spawn_agent_for_call(call_sid: str, caller: str, called: str) -> None
         )
         return
 
-    import httpx
     from livekit import api as lk_api
 
     room_name = f"echo-call-{call_sid}"
@@ -89,7 +87,7 @@ async def inbound_call(
         call_sid = str(form.get("CallSid", f"demo-{uuid.uuid4()}"))
         caller = str(form.get("From", "unknown"))
         called = str(form.get("To", "unknown"))
-        call_status = str(form.get("CallStatus", "ringing"))
+        str(form.get("CallStatus", "ringing"))
 
         logger.info("Inbound call | sid=%s | from=%s | to=%s", call_sid, caller, called)
 
@@ -97,13 +95,6 @@ async def inbound_call(
         background_tasks.add_task(_spawn_agent_for_call, call_sid, caller, called)
 
         # Return Exotel connect XML (connect to our LiveKit WebSocket bridge)
-        livekit_ws = f"{settings.LIVEKIT_URL or 'wss://demo.livekit.io'}/echo-call-{call_sid}"
-        response_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Connect>
-        <Stream url="{livekit_ws}" />
-    </Connect>
-</Response>"""
 
         return JSONResponse(
             content={"status": "connected", "room": f"echo-call-{call_sid}"},

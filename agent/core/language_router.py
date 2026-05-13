@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 from config.settings import get_settings
 
 settings = get_settings()
 
 
-class Lang(str, Enum):
+class Lang(StrEnum):
     ENGLISH = "en-IN"
     HINDI = "hi-IN"
     MARATHI = "mr-IN"

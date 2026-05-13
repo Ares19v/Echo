@@ -23,5 +23,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          recharts: ['recharts'],
+          icons: ['lucide-react'],
+          utils: ['date-fns', 'clsx'],
+        },
+      },
+    },
   },
 })

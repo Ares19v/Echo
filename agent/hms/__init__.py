@@ -1,6 +1,6 @@
 """Echo – HMS package init. Exports the active adapter based on settings."""
-from config.settings import HMSProvider, get_settings
 from agent.hms.base import HMSAdapter
+from config.settings import HMSProvider, get_settings
 
 _settings = get_settings()
 _adapter_instance: HMSAdapter | None = None

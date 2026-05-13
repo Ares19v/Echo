@@ -24,6 +24,7 @@ engine: AsyncEngine = create_async_engine(
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
     echo=settings.DEBUG,
     future=True,
+    connect_args={"connect_timeout": 5},  # fail fast if DB is not available
 )
 
 AsyncSessionLocal = async_sessionmaker(

@@ -1,5 +1,4 @@
 """Tests for the symptom triage engine."""
-import pytest
 from agent.tools.triage import score_triage
 
 

@@ -10,7 +10,6 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -97,7 +96,7 @@ class EscalationEngine:
         matched: list[str] = []
 
         # Check keywords for all languages simultaneously (patient may code-switch in emergency)
-        for lang_key, keywords in _KEYWORDS.items():
+        for _lang_key, keywords in _KEYWORDS.items():
             for kw in keywords:
                 if kw.lower() in text_lower:
                     matched.append(kw)

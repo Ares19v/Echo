@@ -1,5 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_URL || ''
-const ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY || 'change-me-admin-key'
+const ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY; if (!ADMIN_KEY) { console.error('SECURITY WARNING: VITE_ADMIN_KEY is not set'); }
 
 const headers = () => ({
   'Content-Type': 'application/json',

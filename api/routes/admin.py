@@ -1,6 +1,7 @@
 """Echo – Admin API for settings and feature flags."""
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+
 from api.middleware.auth import require_dashboard_key
 from config.settings import get_settings
 

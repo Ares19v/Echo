@@ -10,11 +10,16 @@ import random
 import time
 import uuid
 from datetime import date, datetime, timedelta
-from typing import Optional
 
 from agent.hms.base import (
-    Appointment, BillSummary, Doctor, HMSAdapter, LabReport,
-    PatientRecord, Prescription, TimeSlot,
+    Appointment,
+    BillSummary,
+    Doctor,
+    HMSAdapter,
+    LabReport,
+    PatientRecord,
+    Prescription,
+    TimeSlot,
 )
 
 # ─── Seed Data ────────────────────────────────────────────────────────────────
@@ -89,14 +94,14 @@ class MockHMSAdapter(HMSAdapter):
     def __init__(self) -> None:
         self._slots = _generate_slots()
 
-    async def get_patient_by_phone(self, phone: str) -> Optional[PatientRecord]:
+    async def get_patient_by_phone(self, phone: str) -> PatientRecord | None:
         norm = phone.strip().replace(" ", "")
         for key, patient in _PATIENT_PHONE_INDEX.items():
             if key.endswith(norm[-10:]):
                 return patient
         return None
 
-    async def get_patient_by_id(self, hms_id: str) -> Optional[PatientRecord]:
+    async def get_patient_by_id(self, hms_id: str) -> PatientRecord | None:
         return next((p for p in _PATIENTS if p.hms_id == hms_id), None)
 
     async def register_new_patient_draft(self, name: str, phone: str,
@@ -107,9 +112,9 @@ class MockHMSAdapter(HMSAdapter):
         _PATIENT_PHONE_INDEX[phone] = p
         return new_id
 
-    async def get_available_slots(self, doctor_id: Optional[str] = None,
-                                   department: Optional[str] = None,
-                                   preferred_date: Optional[date] = None) -> list[TimeSlot]:
+    async def get_available_slots(self, doctor_id: str | None = None,
+                                   department: str | None = None,
+                                   preferred_date: date | None = None) -> list[TimeSlot]:
         slots = [s for s in self._slots if s.is_available]
         if doctor_id:
             slots = [s for s in slots if s.doctor_id == doctor_id]
@@ -121,7 +126,7 @@ class MockHMSAdapter(HMSAdapter):
         return slots[:8]
 
     async def book_appointment(self, patient_id: str, slot_id: str,
-                                notes: Optional[str] = None) -> Appointment:
+                                notes: str | None = None) -> Appointment:
         slot = next((s for s in self._slots if s.slot_id == slot_id), None)
         if not slot or not slot.is_available:
             raise ValueError(f"Slot {slot_id} unavailable.")
@@ -136,7 +141,7 @@ class MockHMSAdapter(HMSAdapter):
         _APPOINTMENTS[appt.appointment_id] = appt
         return appt
 
-    async def cancel_appointment(self, appointment_id: str, reason: Optional[str] = None) -> bool:
+    async def cancel_appointment(self, appointment_id: str, reason: str | None = None) -> bool:
         appt = _APPOINTMENTS.get(appointment_id)
         if not appt:
             return False
@@ -161,7 +166,7 @@ class MockHMSAdapter(HMSAdapter):
             appts = [a for a in appts if a.appointment_time > now and a.status == "scheduled"]
         return sorted(appts, key=lambda a: a.appointment_time)
 
-    async def list_doctors(self, department: Optional[str] = None) -> list[Doctor]:
+    async def list_doctors(self, department: str | None = None) -> list[Doctor]:
         if department:
             return [d for d in _DOCTORS if department.lower() in d.department.lower()]
         return list(_DOCTORS)
@@ -195,7 +200,7 @@ class MockHMSAdapter(HMSAdapter):
         }
         return data.get(patient_id, [])
 
-    async def get_bill_summary(self, patient_id: str) -> Optional[BillSummary]:
+    async def get_bill_summary(self, patient_id: str) -> BillSummary | None:
         data: dict[str, BillSummary] = {
             "PT001": BillSummary("BILL001","PT001",2400.0,1600.0,800.0,last_updated=date.today()-timedelta(days=5)),
             "PT003": BillSummary("BILL003","PT003",5000.0,5000.0,0.0,last_updated=date.today()-timedelta(days=7)),

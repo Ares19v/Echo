@@ -7,13 +7,13 @@ and context memory within a single call session.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Optional
+from enum import StrEnum
+from typing import Any
 
 from agent.core.language_router import Lang
 
 
-class Intent(str, Enum):
+class Intent(StrEnum):
     APPOINTMENT_BOOK = "appointment_book"
     APPOINTMENT_CANCEL = "appointment_cancel"
     APPOINTMENT_RESCHEDULE = "appointment_reschedule"
@@ -36,8 +36,8 @@ class Turn:
     role: str         # "user" | "assistant"
     text: str
     language: Lang
-    intent: Optional[Intent] = None
-    tool_called: Optional[str] = None
+    intent: Intent | None = None
+    tool_called: str | None = None
     timestamp_ms: int = 0
 
 
@@ -48,8 +48,8 @@ class DialogueState:
     Passed around all agent components to maintain context.
     """
     call_id: str
-    patient_id: Optional[str] = None
-    patient_name: Optional[str] = None
+    patient_id: str | None = None
+    patient_name: str | None = None
     patient_phone: str = ""
     session_lang: Lang = Lang.ENGLISH
     is_known_patient: bool = False
@@ -66,11 +66,11 @@ class DialogueState:
     clarification_count: int = 0
     consent_given: bool = False
     escalated: bool = False
-    escalation_reason: Optional[str] = None
+    escalation_reason: str | None = None
     turn_count: int = 0
 
-    def add_turn(self, role: str, text: str, intent: Optional[Intent] = None,
-                 tool_called: Optional[str] = None) -> None:
+    def add_turn(self, role: str, text: str, intent: Intent | None = None,
+                 tool_called: str | None = None) -> None:
         self.turns.append(Turn(
             role=role, text=text, language=self.session_lang,
             intent=intent, tool_called=tool_called,
@@ -127,7 +127,7 @@ class DialogueManager:
             return self._escalation_message()
         return self._try_again_message()
 
-    def get_next_missing_slot_prompt(self) -> Optional[str]:
+    def get_next_missing_slot_prompt(self) -> str | None:
         """Return a natural-language prompt for the next unfilled required slot."""
         required = self._REQUIRED_SLOTS.get(self.state.current_intent, [])
         for slot in required:

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import StatusBadge from '../components/StatusBadge'
 import { Search, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import { fetchCalls } from '../api/client'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 
 const DEMO_CALLS = Array.from({ length: 10 }, (_, i) => ({
   id: `demo-${i}`,

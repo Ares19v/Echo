@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ExternalLink, Zap } from 'lucide-react'
+import { ExternalLink, Zap } from 'lucide-react'
 import StatusBadge from '../components/StatusBadge'
 import { fetchEscalations } from '../api/client'
 import { formatDistanceToNow } from 'date-fns'

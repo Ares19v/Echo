@@ -36,7 +36,7 @@ if %errorlevel% neq 0 (
 
 :: ── Start FastAPI backend ─────────────────────────────────────────────────
 echo [2/4] Starting Echo API backend (port 8000)...
-start "Echo Backend" cmd /k "call .venv\Scripts\activate.bat && uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload"
+start "Echo Backend" cmd /k "call .venv\Scripts\activate.bat && python run_backend.py"
 timeout /t 3 /nobreak >nul
 echo  ✓ API backend started
 

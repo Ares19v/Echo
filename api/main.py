@@ -6,8 +6,13 @@ and the WebSocket feed for the admin dashboard.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +30,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     logger.info("Echo API starting up (env=%s, hms=%s)", settings.ENVIRONMENT, settings.HMS_PROVIDER)
-    await create_all_tables()
+    try:
+        await create_all_tables()
+    except Exception as e:
+        logger.warning("Database connection failed. Proceeding in limited mode: %s", e)
     yield
     logger.info("Echo API shutting down.")
 

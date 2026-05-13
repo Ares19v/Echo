@@ -1,6 +1,8 @@
 """Echo – Immutable audit log writer."""
 from __future__ import annotations
+
 import logging
+
 from db.models import AuditEvent, AuditEventType
 from db.session import get_db_context
 

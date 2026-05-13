@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 export default function StatCard({ label, value, icon: Icon, color = '#3d7bfd', trend }) {
   const [animated, setAnimated] = useState(false)

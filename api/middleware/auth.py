@@ -1,5 +1,6 @@
 """Echo – Dashboard authentication middleware."""
 from fastapi import Header, HTTPException
+
 from config.settings import get_settings
 
 settings = get_settings()

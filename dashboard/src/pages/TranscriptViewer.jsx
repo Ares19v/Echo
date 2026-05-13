@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, User, Bot, Clock, Mic, Hash } from 'lucide-react'
 import { fetchCall } from '../api/client'
-import { format } from 'date-fns'
 import StatusBadge from '../components/StatusBadge'
 
 const DEMO_CALL = {

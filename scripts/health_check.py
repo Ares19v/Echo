@@ -1,9 +1,10 @@
-from config.settings import get_settings
-from agent.hms.mock_adapter import MockHMSAdapter
-from agent.core.escalation import EscalationEngine
-from agent.core.language_router import LanguageRouter
-from agent.tools.triage import score_triage
 import asyncio
+
+from agent.core.escalation import EscalationEngine
+from agent.core.language_router import Lang, LanguageRouter
+from agent.hms.mock_adapter import MockHMSAdapter
+from agent.tools.triage import score_triage
+from config.settings import get_settings
 
 s = get_settings()
 print(f"Settings OK — HMS={s.HMS_PROVIDER}, env={s.ENVIRONMENT}")
@@ -17,7 +18,7 @@ async def check():
 asyncio.run(check())
 
 engine = EscalationEngine()
-from agent.core.language_router import Lang
+
 r = engine.check("chest pain", Lang.ENGLISH)
 print(f"Escalation OK — is_emergency={r.is_emergency}")
 

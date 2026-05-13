@@ -17,24 +17,20 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
 import google.generativeai as genai
 import httpx
-from livekit import agents, rtc
+from livekit import agents
 from livekit.agents import JobContext, WorkerOptions, cli
-from livekit.agents.voice_assistant import VoiceAssistant
-from livekit.plugins import silero
 
 from agent.core.barge_in_handler import BargeInHandler
-from agent.core.dialogue_manager import DialogueManager, DialogueState, Intent
+from agent.core.dialogue_manager import DialogueManager, DialogueState
 from agent.core.escalation import EscalationEngine
-from agent.core.language_router import Lang, LanguageSession, detect_language, get_filler_for_lang
+from agent.core.language_router import Lang, LanguageSession, detect_language
 from agent.core.sentiment_monitor import SentimentMonitor
-from agent.tools import appointments, faq, lab_reports, patient_lookup, registration, triage
+from agent.tools import appointments, faq, lab_reports, patient_lookup, triage
 from config.settings import get_settings
 
 logger = logging.getLogger(__name__)
@@ -243,11 +239,11 @@ class GeminiLLM:
                         # Send tool result back to model
                         final_response = await asyncio.get_event_loop().run_in_executor(
                             None,
-                            lambda: chat.send_message(
+                            lambda tn=tool_name, tr=tool_result: chat.send_message(
                                 genai.protos.Content(parts=[
                                     genai.protos.Part(function_response=genai.protos.FunctionResponse(
-                                        name=tool_name,
-                                        response={"result": json.dumps(tool_result)},
+                                        name=tn,
+                                        response={"result": json.dumps(tr)},
                                     ))
                                 ])
                             ),
@@ -291,11 +287,11 @@ async def entrypoint(ctx: JobContext) -> None:
     dialogue = DialogueManager(state)
     escalation_engine = EscalationEngine()
     sentiment = SentimentMonitor()
-    barge_in = BargeInHandler(
+    BargeInHandler(
         base_silence_ms=settings.VAD_SILENCE_THRESHOLD_MS,
         elderly_silence_ms=settings.VAD_ELDERLY_THRESHOLD_MS,
     )
-    stt = SarvamSTT()
+    SarvamSTT()
     tts_client = SarvamTTS()
     llm = GeminiLLM()
 
@@ -317,8 +313,8 @@ async def entrypoint(ctx: JobContext) -> None:
     # ── Consent Greeting ──────────────────────────────────────────────────────
     consent_messages = {
         Lang.ENGLISH: (
-            f"Namaste! You've reached the clinic. This call is assisted by an AI and may be recorded for quality purposes. "
-            f"Say 'yes' or 'hanji' to continue, or press 1."
+            "Namaste! You've reached the clinic. This call is assisted by an AI and may be recorded for quality purposes. "
+            "Say 'yes' or 'hanji' to continue, or press 1."
         ),
         Lang.HINDI: (
             "Namaste! Aap clinic mein phone kar rahe hain. Yeh call ek AI se assist ki ja rahi hai aur quality ke liye record ho sakti hai. "
@@ -334,7 +330,7 @@ async def entrypoint(ctx: JobContext) -> None:
     logger.info("Playing consent greeting in %s", state.session_lang)
 
     # In production: synthesize and stream this via LiveKit audio track
-    audio_bytes = await tts_client.synthesize(
+    await tts_client.synthesize(
         greeting,
         language_code=state.session_lang.value,
         voice="meera" if state.session_lang == Lang.ENGLISH else "pavithra",

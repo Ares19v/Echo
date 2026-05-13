@@ -9,8 +9,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Optional
-
 
 # ─── Domain DTOs ─────────────────────────────────────────────────────────────
 
@@ -19,14 +17,14 @@ class PatientRecord:
     hms_id: str
     name: str
     phone: str
-    date_of_birth: Optional[date] = None
-    gender: Optional[str] = None
-    blood_group: Optional[str] = None
-    email: Optional[str] = None
-    address: Optional[str] = None
+    date_of_birth: date | None = None
+    gender: str | None = None
+    blood_group: str | None = None
+    email: str | None = None
+    address: str | None = None
     known_conditions: list[str] = field(default_factory=list)
     current_medications: list[str] = field(default_factory=list)
-    last_visit: Optional[date] = None
+    last_visit: date | None = None
     preferred_language: str = "en-IN"
 
 
@@ -37,7 +35,7 @@ class Doctor:
     specialisation: str
     department: str
     available_days: list[str] = field(default_factory=list)
-    consultation_fee: Optional[float] = None
+    consultation_fee: float | None = None
 
 
 @dataclass
@@ -59,7 +57,7 @@ class Appointment:
     department: str
     appointment_time: datetime
     status: str  # "scheduled" | "cancelled" | "completed" | "no_show"
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 @dataclass
@@ -69,8 +67,8 @@ class LabReport:
     test_name: str
     ordered_date: date
     status: str         # "pending" | "ready" | "dispatched"
-    result_summary: Optional[str] = None
-    ready_date: Optional[date] = None
+    result_summary: str | None = None
+    ready_date: date | None = None
 
 
 @dataclass
@@ -80,7 +78,7 @@ class Prescription:
     doctor_name: str
     issued_date: date
     medications: list[dict]   # [{name, dosage, frequency, duration}]
-    notes: Optional[str] = None
+    notes: str | None = None
     refill_allowed: bool = False
 
 
@@ -92,7 +90,7 @@ class BillSummary:
     paid_amount: float
     outstanding: float
     currency: str = "INR"
-    last_updated: Optional[date] = None
+    last_updated: date | None = None
 
 
 # ─── Abstract Adapter ─────────────────────────────────────────────────────────
@@ -106,12 +104,12 @@ class HMSAdapter(ABC):
     # ── Patient ───────────────────────────────────────────────────────────────
 
     @abstractmethod
-    async def get_patient_by_phone(self, phone: str) -> Optional[PatientRecord]:
+    async def get_patient_by_phone(self, phone: str) -> PatientRecord | None:
         """Look up a patient by their registered phone number."""
         ...
 
     @abstractmethod
-    async def get_patient_by_id(self, hms_id: str) -> Optional[PatientRecord]:
+    async def get_patient_by_id(self, hms_id: str) -> PatientRecord | None:
         """Fetch a full patient record by HMS ID."""
         ...
 
@@ -134,9 +132,9 @@ class HMSAdapter(ABC):
     @abstractmethod
     async def get_available_slots(
         self,
-        doctor_id: Optional[str] = None,
-        department: Optional[str] = None,
-        preferred_date: Optional[date] = None,
+        doctor_id: str | None = None,
+        department: str | None = None,
+        preferred_date: date | None = None,
     ) -> list[TimeSlot]:
         """Return available appointment slots matching the given filters."""
         ...
@@ -146,13 +144,13 @@ class HMSAdapter(ABC):
         self,
         patient_id: str,
         slot_id: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> Appointment:
         """Book the given slot for the patient and return the confirmed appointment."""
         ...
 
     @abstractmethod
-    async def cancel_appointment(self, appointment_id: str, reason: Optional[str] = None) -> bool:
+    async def cancel_appointment(self, appointment_id: str, reason: str | None = None) -> bool:
         """Cancel an appointment. Returns True on success."""
         ...
 
@@ -173,7 +171,7 @@ class HMSAdapter(ABC):
     # ── Doctors ───────────────────────────────────────────────────────────────
 
     @abstractmethod
-    async def list_doctors(self, department: Optional[str] = None) -> list[Doctor]:
+    async def list_doctors(self, department: str | None = None) -> list[Doctor]:
         """Return all doctors, optionally filtered by department."""
         ...
 
@@ -194,7 +192,7 @@ class HMSAdapter(ABC):
     # ── Billing ───────────────────────────────────────────────────────────────
 
     @abstractmethod
-    async def get_bill_summary(self, patient_id: str) -> Optional[BillSummary]:
+    async def get_bill_summary(self, patient_id: str) -> BillSummary | None:
         """Return the outstanding bill summary for a patient."""
         ...
 

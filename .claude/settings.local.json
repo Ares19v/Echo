@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python *)",
+      "Bash(npm run *)",
+      "Bash(sed -i 's/AlertTriangle, Clock/Clock/g' src/pages/EscalationQueue.jsx)",
+      "Bash(sed -i 's/CheckCircle, XCircle, Activity/Activity/g' src/pages/SystemHealth.jsx)",
+      "Bash(sed -i 's/CheckCircle, XCircle/Activity/g' src/pages/SystemHealth.jsx)",
+      "Bash(sed -i \"s/import { format, /import { /g\" src/pages/TranscriptViewer.jsx)",
+      "Bash(sed -i 's/const _tick = /const tick = /g' src/pages/LiveMonitor.jsx)",
+      "Bash(docker compose *)"
+    ]
+  }
+}

@@ -1,5 +1,4 @@
 """Tests for the emergency escalation engine."""
-import pytest
 from agent.core.escalation import EscalationEngine, check_mental_health_crisis
 from agent.core.language_router import Lang
 

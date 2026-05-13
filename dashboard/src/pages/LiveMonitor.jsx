@@ -37,7 +37,7 @@ export default function LiveMonitor() {
   const [loading, setLoading] = useState(true)
   const [isDemo, setIsDemo] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
-  const [tick, setTick] = useState(0)
+  const [, setTick] = useState(0)
 
   const load = useCallback(async () => {
     try {
@@ -129,7 +129,7 @@ export default function LiveMonitor() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-1)' }}>Call Volume</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>Today's hourly trend</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>Today&apos;s hourly trend</div>
             </div>
             <span className="badge badge-blue">Today</span>
           </div>

@@ -1,6 +1,8 @@
 """Echo – DPDP Consent middleware."""
 from __future__ import annotations
+
 import logging
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 

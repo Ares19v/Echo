@@ -9,7 +9,6 @@ from __future__ import annotations
 import math
 import re
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -48,7 +47,7 @@ class FAQEngine:
         self._faq = _load_faq()
         self._indexed = [(entry, _tokenise(entry["question"])) for entry in self._faq]
 
-    def search(self, query: str, threshold: float = 0.15) -> Optional[dict]:
+    def search(self, query: str, threshold: float = 0.15) -> dict | None:
         query_tokens = _tokenise(query)
         vocab = set(query_tokens)
         for _, tokens in self._indexed:
@@ -56,7 +55,7 @@ class FAQEngine:
 
         query_vec = _tf_idf_vector(query_tokens, vocab)
         best_score = 0.0
-        best_entry: Optional[dict] = None
+        best_entry: dict | None = None
 
         for entry, tokens in self._indexed:
             entry_vec = _tf_idf_vector(tokens, vocab)

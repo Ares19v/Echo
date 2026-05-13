@@ -7,14 +7,19 @@ Requires EKA_CLIENT_ID and EKA_CLIENT_SECRET in environment.
 from __future__ import annotations
 
 import time
-from datetime import date, datetime, timedelta
-from typing import Optional
+from datetime import date, datetime
 
 import httpx
 
 from agent.hms.base import (
-    Appointment, BillSummary, Doctor, HMSAdapter, LabReport,
-    PatientRecord, Prescription, TimeSlot,
+    Appointment,
+    BillSummary,
+    Doctor,
+    HMSAdapter,
+    LabReport,
+    PatientRecord,
+    Prescription,
+    TimeSlot,
 )
 from config.settings import get_settings
 
@@ -29,14 +34,14 @@ class EkaCareAdapter(HMSAdapter):
 
     def __init__(self) -> None:
         if not settings.EKA_CLIENT_ID or not settings.EKA_CLIENT_SECRET:
-            raise EnvironmentError(
+            raise OSError(
                 "EKA_CLIENT_ID and EKA_CLIENT_SECRET must be set when HMS_PROVIDER=eka_care. "
                 "Obtain credentials from hub.eka.care → API Tokens."
             )
         self._base = settings.EKA_BASE_URL
-        self._access_token: Optional[str] = None
+        self._access_token: str | None = None
         self._token_expires_at: float = 0.0
-        self._refresh_token: Optional[str] = None
+        self._refresh_token: str | None = None
         self._client = httpx.AsyncClient(timeout=10.0)
 
     # ── Auth ──────────────────────────────────────────────────────────────────
@@ -105,7 +110,7 @@ class EkaCareAdapter(HMSAdapter):
 
     # ── Patient ───────────────────────────────────────────────────────────────
 
-    async def get_patient_by_phone(self, phone: str) -> Optional[PatientRecord]:
+    async def get_patient_by_phone(self, phone: str) -> PatientRecord | None:
         try:
             data = await self._get("/patient/v1/search", phone=phone)
             results = data.get("patients") or data.get("data", [])
@@ -115,7 +120,7 @@ class EkaCareAdapter(HMSAdapter):
         except httpx.HTTPStatusError:
             return None
 
-    async def get_patient_by_id(self, hms_id: str) -> Optional[PatientRecord]:
+    async def get_patient_by_id(self, hms_id: str) -> PatientRecord | None:
         try:
             data = await self._get(f"/patient/v1/{hms_id}")
             return self._map_patient(data)
@@ -164,9 +169,9 @@ class EkaCareAdapter(HMSAdapter):
 
     # ── Appointments ──────────────────────────────────────────────────────────
 
-    async def get_available_slots(self, doctor_id: Optional[str] = None,
-                                   department: Optional[str] = None,
-                                   preferred_date: Optional[date] = None) -> list[TimeSlot]:
+    async def get_available_slots(self, doctor_id: str | None = None,
+                                   department: str | None = None,
+                                   preferred_date: date | None = None) -> list[TimeSlot]:
         params: dict = {}
         if doctor_id:
             params["doctorId"] = doctor_id
@@ -191,14 +196,14 @@ class EkaCareAdapter(HMSAdapter):
         return result
 
     async def book_appointment(self, patient_id: str, slot_id: str,
-                                notes: Optional[str] = None) -> Appointment:
+                                notes: str | None = None) -> Appointment:
         body = {"patient_id": patient_id, "slot_id": slot_id}
         if notes:
             body["notes"] = notes
         data = await self._post("/scheduling/v1/appointments", body)
         return self._map_appointment(data)
 
-    async def cancel_appointment(self, appointment_id: str, reason: Optional[str] = None) -> bool:
+    async def cancel_appointment(self, appointment_id: str, reason: str | None = None) -> bool:
         body = {"status": "cancelled"}
         if reason:
             body["cancellation_reason"] = reason
@@ -236,7 +241,7 @@ class EkaCareAdapter(HMSAdapter):
 
     # ── Doctors ───────────────────────────────────────────────────────────────
 
-    async def list_doctors(self, department: Optional[str] = None) -> list[Doctor]:
+    async def list_doctors(self, department: str | None = None) -> list[Doctor]:
         params = {"department": department} if department else {}
         data = await self._get("/provider/v1/doctors", **params)
         raw = data.get("doctors") or data.get("data", [])
@@ -290,7 +295,7 @@ class EkaCareAdapter(HMSAdapter):
 
     # ── Billing ───────────────────────────────────────────────────────────────
 
-    async def get_bill_summary(self, patient_id: str) -> Optional[BillSummary]:
+    async def get_bill_summary(self, patient_id: str) -> BillSummary | None:
         try:
             data = await self._get("/billing/v1/summary", patientId=patient_id)
             return BillSummary(

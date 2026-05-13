@@ -8,7 +8,7 @@ the policy and state for when / how to respond to interruptions.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

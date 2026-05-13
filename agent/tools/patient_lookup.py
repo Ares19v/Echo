@@ -6,7 +6,6 @@ Resolves caller phone number to a patient record via HMS.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from agent.hms import get_hms_adapter
 from agent.hms.base import PatientRecord
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def lookup_by_phone(phone: str) -> dict:
     """Look up a patient by their calling phone number."""
     hms = get_hms_adapter()
-    patient: Optional[PatientRecord] = await hms.get_patient_by_phone(phone)
+    patient: PatientRecord | None = await hms.get_patient_by_phone(phone)
 
     if not patient:
         return {"found": False, "is_new_patient": True}

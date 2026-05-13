@@ -6,21 +6,20 @@ All sensitive values are loaded from environment variables.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class HMSProvider(str, Enum):
+class HMSProvider(StrEnum):
     """Supported Hospital Management System back-ends."""
     MOCK = "mock"
     EKA_CARE = "eka_care"
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     DEVELOPMENT = "development"
     PRODUCTION = "production"
     TESTING = "testing"
@@ -51,7 +50,6 @@ class Settings(BaseSettings):
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
     API_SECRET_KEY: str = Field(
-        default="change-me-in-production-use-openssl-rand-hex-32",
         description="Secret key for JWT signing and CSRF protection.",
     )
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
@@ -71,17 +69,17 @@ class Settings(BaseSettings):
     # ─── HMS / EHR ──────────────────────────────────────────────────────────
     HMS_PROVIDER: HMSProvider = HMSProvider.MOCK
     # Eka Care (only used when HMS_PROVIDER=eka_care)
-    EKA_CLIENT_ID: Optional[str] = None
-    EKA_CLIENT_SECRET: Optional[str] = None
+    EKA_CLIENT_ID: str | None = None
+    EKA_CLIENT_SECRET: str | None = None
     EKA_BASE_URL: str = "https://api.eka.care"
 
     # ─── LiveKit ────────────────────────────────────────────────────────────
-    LIVEKIT_URL: Optional[str] = None
-    LIVEKIT_API_KEY: Optional[str] = None
-    LIVEKIT_API_SECRET: Optional[str] = None
+    LIVEKIT_URL: str | None = None
+    LIVEKIT_API_KEY: str | None = None
+    LIVEKIT_API_SECRET: str | None = None
 
     # ─── Sarvam AI ──────────────────────────────────────────────────────────
-    SARVAM_API_KEY: Optional[str] = None
+    SARVAM_API_KEY: str | None = None
     SARVAM_BASE_URL: str = "https://api.sarvam.ai"
     SARVAM_STT_MODEL: str = "saarika:v2"
     SARVAM_TTS_MODEL: str = "bulbul:v2"     # upgrade to v3 when funded
@@ -89,16 +87,16 @@ class Settings(BaseSettings):
     SARVAM_DEFAULT_VOICE: str = "meera"     # warm, professional Indian female voice
 
     # ─── Gemini (LLM) ───────────────────────────────────────────────────────
-    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-2.5-flash"
     GEMINI_TEMPERATURE: float = 0.3         # low temp for consistent clinical replies
     GEMINI_MAX_TOKENS: int = 512
 
     # ─── Exotel (Telephony) ──────────────────────────────────────────────────
-    EXOTEL_API_KEY: Optional[str] = None
-    EXOTEL_API_TOKEN: Optional[str] = None
-    EXOTEL_SID: Optional[str] = None
-    EXOTEL_VIRTUAL_NUMBER: Optional[str] = None
+    EXOTEL_API_KEY: str | None = None
+    EXOTEL_API_TOKEN: str | None = None
+    EXOTEL_SID: str | None = None
+    EXOTEL_VIRTUAL_NUMBER: str | None = None
     EXOTEL_BASE_URL: str = "https://api.exotel.com/v1"
 
     # ─── Database ───────────────────────────────────────────────────────────
@@ -124,7 +122,6 @@ class Settings(BaseSettings):
 
     # ─── Admin Dashboard ─────────────────────────────────────────────────────
     DASHBOARD_ADMIN_KEY: str = Field(
-        default="change-me-admin-key",
         description="Static API key for the admin dashboard. Rotate regularly.",
     )
 

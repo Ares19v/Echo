@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
-from typing import Optional
 
 from agent.hms import get_hms_adapter
-from agent.hms.base import Appointment, TimeSlot
+from agent.hms.base import TimeSlot
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +22,14 @@ def _format_slot(slot: TimeSlot) -> str:
 
 
 async def get_available_slots(
-    department: Optional[str] = None,
-    doctor_name: Optional[str] = None,
-    preferred_date_str: Optional[str] = None,
+    department: str | None = None,
+    doctor_name: str | None = None,
+    preferred_date_str: str | None = None,
 ) -> dict:
     """Fetch available appointment slots matching the given preferences."""
     hms = get_hms_adapter()
 
-    preferred_date: Optional[date] = None
+    preferred_date: date | None = None
     if preferred_date_str:
         try:
             preferred_date = datetime.strptime(preferred_date_str, "%Y-%m-%d").date()
@@ -38,7 +37,7 @@ async def get_available_slots(
             pass
 
     # Resolve doctor name to ID if provided
-    doctor_id: Optional[str] = None
+    doctor_id: str | None = None
     if doctor_name:
         doctors = await hms.list_doctors()
         match = next((d for d in doctors if doctor_name.lower() in d.name.lower()), None)
@@ -74,7 +73,7 @@ async def get_available_slots(
 async def book_appointment(
     patient_id: str,
     slot_id: str,
-    notes: Optional[str] = None,
+    notes: str | None = None,
 ) -> dict:
     """Book a specific slot for a patient."""
     hms = get_hms_adapter()
@@ -93,7 +92,7 @@ async def book_appointment(
         return {"success": False, "message": str(e)}
 
 
-async def cancel_appointment(appointment_id: str, reason: Optional[str] = None) -> dict:
+async def cancel_appointment(appointment_id: str, reason: str | None = None) -> dict:
     """Cancel an existing appointment."""
     hms = get_hms_adapter()
     success = await hms.cancel_appointment(appointment_id, reason)
@@ -140,7 +139,7 @@ async def get_patient_appointments(patient_id: str) -> dict:
     }
 
 
-async def list_doctors(department: Optional[str] = None) -> dict:
+async def list_doctors(department: str | None = None) -> dict:
     """List available doctors, optionally filtered by department."""
     hms = get_hms_adapter()
     doctors = await hms.list_doctors(department)

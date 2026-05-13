@@ -1,6 +1,5 @@
 """Tests for agent tools."""
 import pytest
-import pytest_asyncio
 
 
 @pytest.mark.asyncio

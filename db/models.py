@@ -7,19 +7,18 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum as PyEnum
-from typing import Optional
+from enum import StrEnum
 
 from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
+    Enum,
     Float,
     ForeignKey,
     Integer,
     String,
     Text,
-    Enum,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -33,21 +32,21 @@ class Base(DeclarativeBase):
 
 # ─── Enumerations ────────────────────────────────────────────────────────────
 
-class Language(str, PyEnum):
+class Language(StrEnum):
     ENGLISH = "en-IN"
     HINDI = "hi-IN"
     MARATHI = "mr-IN"
     UNKNOWN = "unknown"
 
 
-class CallOutcome(str, PyEnum):
+class CallOutcome(StrEnum):
     RESOLVED = "resolved"           # AI handled fully
     ESCALATED = "escalated"         # Transferred to human
     ABANDONED = "abandoned"         # Patient hung up
     FAILED = "failed"               # Technical failure
 
 
-class CallIntent(str, PyEnum):
+class CallIntent(StrEnum):
     APPOINTMENT_BOOK = "appointment_book"
     APPOINTMENT_CANCEL = "appointment_cancel"
     APPOINTMENT_RESCHEDULE = "appointment_reschedule"
@@ -64,7 +63,7 @@ class CallIntent(str, PyEnum):
     UNKNOWN = "unknown"
 
 
-class EscalationReason(str, PyEnum):
+class EscalationReason(StrEnum):
     EMERGENCY = "emergency"
     PATIENT_REQUESTED = "patient_requested"
     MAX_CLARIFICATIONS = "max_clarifications"
@@ -73,14 +72,14 @@ class EscalationReason(str, PyEnum):
     MENTAL_HEALTH = "mental_health"
 
 
-class TriageRisk(str, PyEnum):
+class TriageRisk(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     EMERGENCY = "emergency"
 
 
-class AuditEventType(str, PyEnum):
+class AuditEventType(StrEnum):
     CALL_START = "call_start"
     CALL_END = "call_end"
     CONSENT_GIVEN = "consent_given"
@@ -105,9 +104,9 @@ class Patient(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    hms_patient_id: Mapped[Optional[str]] = mapped_column(String(128), index=True, unique=True)
+    hms_patient_id: Mapped[str | None] = mapped_column(String(128), index=True, unique=True)
     phone_number: Mapped[str] = mapped_column(String(20), index=True)
-    name: Mapped[Optional[str]] = mapped_column(String(256))
+    name: Mapped[str | None] = mapped_column(String(256))
     preferred_language: Mapped[Language] = mapped_column(
         Enum(Language), default=Language.ENGLISH
     )
@@ -119,7 +118,7 @@ class Patient(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    call_logs: Mapped[list["CallLog"]] = relationship(back_populates="patient", lazy="selectin")
+    call_logs: Mapped[list[CallLog]] = relationship(back_populates="patient", lazy="selectin")
 
 
 class CallLog(Base):
@@ -131,10 +130,10 @@ class CallLog(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    exotel_call_sid: Mapped[Optional[str]] = mapped_column(String(128), index=True, unique=True)
-    livekit_room_name: Mapped[Optional[str]] = mapped_column(String(256))
+    exotel_call_sid: Mapped[str | None] = mapped_column(String(128), index=True, unique=True)
+    livekit_room_name: Mapped[str | None] = mapped_column(String(256))
 
-    patient_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    patient_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("patients.id", ondelete="SET NULL"), nullable=True
     )
     patient_phone: Mapped[str] = mapped_column(String(20))  # retained for audit even if patient deleted
@@ -142,34 +141,34 @@ class CallLog(Base):
     language: Mapped[Language] = mapped_column(Enum(Language), default=Language.ENGLISH)
     primary_intent: Mapped[CallIntent] = mapped_column(Enum(CallIntent), default=CallIntent.UNKNOWN)
     outcome: Mapped[CallOutcome] = mapped_column(Enum(CallOutcome), default=CallOutcome.ABANDONED)
-    escalation_reason: Mapped[Optional[EscalationReason]] = mapped_column(
+    escalation_reason: Mapped[EscalationReason | None] = mapped_column(
         Enum(EscalationReason), nullable=True
     )
 
     # Timing
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    duration_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Conversation
     turn_count: Mapped[int] = mapped_column(Integer, default=0)
-    transcript: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)  # [{role, text, ts, lang}]
-    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)      # post-call AI summary
+    transcript: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{role, text, ts, lang}]
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)      # post-call AI summary
 
     # Quality
-    sentiment_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)   # -1.0 to 1.0
-    resolution_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.0 to 1.0
+    sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)   # -1.0 to 1.0
+    resolution_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # 0.0 to 1.0
 
     # DPDP
     consent_given: Mapped[bool] = mapped_column(Boolean, default=False)
     audio_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
-    audio_delete_due: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    audio_delete_due: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    patient: Mapped[Optional["Patient"]] = relationship(back_populates="call_logs")
-    audit_events: Mapped[list["AuditEvent"]] = relationship(back_populates="call_log", lazy="selectin")
-    triage_records: Mapped[list["TriageRecord"]] = relationship(back_populates="call_log")
+    patient: Mapped[Patient | None] = relationship(back_populates="call_logs")
+    audit_events: Mapped[list[AuditEvent]] = relationship(back_populates="call_log", lazy="selectin")
+    triage_records: Mapped[list[TriageRecord]] = relationship(back_populates="call_log")
 
 
 class AuditEvent(Base):
@@ -182,17 +181,17 @@ class AuditEvent(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    call_log_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    call_log_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("call_logs.id", ondelete="SET NULL"), nullable=True, index=True
     )
     event_type: Mapped[AuditEventType] = mapped_column(Enum(AuditEventType), index=True)
     actor: Mapped[str] = mapped_column(String(64), default="echo_agent")  # who triggered it
-    detail: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)   # event-specific payload
+    detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)   # event-specific payload
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
 
-    call_log: Mapped[Optional["CallLog"]] = relationship(back_populates="audit_events")
+    call_log: Mapped[CallLog | None] = relationship(back_populates="audit_events")
 
 
 class TriageRecord(Base):
@@ -207,17 +206,17 @@ class TriageRecord(Base):
     call_log_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("call_logs.id", ondelete="CASCADE"), index=True
     )
-    patient_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    patient_gender: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    patient_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    patient_gender: Mapped[str | None] = mapped_column(String(16), nullable=True)
     chief_complaint: Mapped[str] = mapped_column(Text)
     symptoms: Mapped[list] = mapped_column(JSON, default=list)           # [str]
-    duration_of_symptoms: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    duration_of_symptoms: Mapped[str | None] = mapped_column(String(128), nullable=True)
     risk_level: Mapped[TriageRisk] = mapped_column(Enum(TriageRisk))
     risk_score: Mapped[int] = mapped_column(Integer)                     # 0–100
     recommended_action: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    call_log: Mapped["CallLog"] = relationship(back_populates="triage_records")
+    call_log: Mapped[CallLog] = relationship(back_populates="triage_records")
 
 
 class ConsentRecord(Base):
@@ -249,9 +248,9 @@ class SystemHealthSnapshot(Base):
     __tablename__ = "system_health_snapshots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sarvam_latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    gemini_latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    hms_latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    sarvam_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gemini_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    hms_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     active_calls: Mapped[int] = mapped_column(Integer, default=0)
     sarvam_ok: Mapped[bool] = mapped_column(Boolean, default=True)
     gemini_ok: Mapped[bool] = mapped_column(Boolean, default=True)
