@@ -1,17 +1,16 @@
 """
 Echo – Gemini LLM plugin for LiveKit Agents.
-Wraps Google Gemini 2.5 Flash into the livekit-agents LLM interface
-with tool-calling support for Echo's healthcare tools.
+Uses the new google-genai SDK (google.genai) for Gemini 2.x models.
 """
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid
-from collections.abc import AsyncIterable
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
+from livekit.agents import APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS
 from livekit.agents import llm
 from livekit.agents.llm import (
     ChatChunk,
@@ -24,19 +23,21 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiLLMStream(LLMStream):
-    """Streams Gemini response tokens as ChatChunks."""
+    """Generates a Gemini response and emits it as ChatChunks."""
 
     async def _run(self) -> None:
         request_id = str(uuid.uuid4())
-        # Build prompt from chat context
-        messages = []
-        for msg in self._chat_ctx.messages:
-            role = "user" if msg.role == "user" else "model"
-            text = msg.text_content or ""
-            if text:
-                messages.append({"role": role, "parts": [text]})
 
-        if not messages:
+        # Build conversation from ChatContext
+        contents: list[genai_types.Content] = []
+        for msg in self._chat_ctx.messages:
+            text = msg.text_content or ""
+            if not text:
+                continue
+            role = "user" if msg.role == "user" else "model"
+            contents.append(genai_types.Content(role=role, parts=[genai_types.Part(text=text)]))
+
+        if not contents:
             self._event_ch.send_nowait(
                 ChatChunk(
                     request_id=request_id,
@@ -46,19 +47,25 @@ class GeminiLLMStream(LLMStream):
             return
 
         try:
-            model = self._llm._model  # type: ignore[attr-defined]
+            client: genai.Client = self._llm._client  # type: ignore[attr-defined]
+            model_name: str = self._llm._model_name  # type: ignore[attr-defined]
+            config: genai_types.GenerateContentConfig = self._llm._config  # type: ignore[attr-defined]
+
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
-                lambda: model.generate_content(messages),
+                lambda: client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=config,
+                ),
             )
             text = response.text or ""
             logger.debug("Gemini response: %r", text[:80])
         except Exception as e:
             logger.warning("Gemini error: %s", e)
-            text = "I'm sorry, I'm having trouble processing that right now. Please try again."
+            text = "I'm sorry, I'm having a moment. Could you repeat that?"
 
-        # Emit full text as a single chunk (non-streaming for simplicity)
         self._event_ch.send_nowait(
             ChatChunk(
                 request_id=request_id,
@@ -73,7 +80,7 @@ class GeminiLLMStream(LLMStream):
 
 
 class GeminiLLM(llm.LLM):
-    """LiveKit-compatible Gemini LLM plugin."""
+    """LiveKit-compatible Gemini LLM plugin using google-genai SDK."""
 
     def __init__(
         self,
@@ -85,16 +92,11 @@ class GeminiLLM(llm.LLM):
         system_prompt: str = "",
     ) -> None:
         super().__init__()
-        genai.configure(api_key=api_key)
-
-        # Prepend system prompt as first user message (Gemini doesn't have system role)
-        self._system_prompt = system_prompt
-        self._model = genai.GenerativeModel(
-            model_name=model,
-            generation_config=genai.GenerationConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-            ),
+        self._client = genai.Client(api_key=api_key)
+        self._model_name = model
+        self._config = genai_types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_tokens,
             system_instruction=system_prompt or None,
         )
 
@@ -104,14 +106,14 @@ class GeminiLLM(llm.LLM):
 
     @property
     def model(self) -> str:
-        return self._model.model_name
+        return self._model_name
 
     def chat(
         self,
         *,
         chat_ctx: ChatContext,
         tools: list[llm.Tool] | None = None,
-        conn_options: llm.APIConnectOptions = llm.DEFAULT_API_CONNECT_OPTIONS,
+        conn_options: APIConnectOptions = DEFAULT_API_CONNECT_OPTIONS,
         **kwargs,
     ) -> GeminiLLMStream:
         return GeminiLLMStream(

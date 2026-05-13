@@ -12,10 +12,13 @@ Running (from Run_Project.bat):
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import sys
 from pathlib import Path
+
+# Load .env before anything else so LIVEKIT_URL etc. are available to the worker CLI
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
 from livekit.plugins import silero

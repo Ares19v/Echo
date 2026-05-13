@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass
 
 import httpx
-from livekit.agents import stt, utils
+from livekit.agents import APIConnectOptions, stt, utils
 from livekit.agents.stt import (
     SpeechData,
     SpeechEvent,
@@ -45,7 +45,7 @@ class SarvamSTT(stt.STT):
         buffer: utils.AudioBuffer,
         *,
         language: str | None = None,
-        conn_options: stt.APIConnectOptions | None = None,
+        conn_options: APIConnectOptions | None = None,
     ) -> SpeechEvent:
         """Convert AudioBuffer → WAV bytes → Sarvam STT API → SpeechEvent."""
         lang = language or self._opts.language_code
