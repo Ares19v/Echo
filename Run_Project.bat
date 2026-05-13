@@ -36,15 +36,23 @@ if %errorlevel% neq 0 (
 
 :: ── Start FastAPI backend ─────────────────────────────────────────────────
 echo [2/4] Starting Echo API backend (port 8000)...
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do (
+    taskkill /F /PID %%p >nul 2>&1
+)
 start "Echo Backend" cmd /k "call .venv\Scripts\activate.bat && python run_backend.py"
 timeout /t 3 /nobreak >nul
 echo  ✓ API backend started
 
 :: ── Start agent worker ────────────────────────────────────────────────────
 echo [3/4] Starting Echo agent worker...
+:: Kill any stale process holding port 8081 from a previous run
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8081 " ^| findstr "LISTENING"') do (
+    taskkill /F /PID %%p >nul 2>&1
+)
+timeout /t 1 /nobreak >nul
 start "Echo Agent Worker" cmd /k "call .venv\Scripts\activate.bat && python -m agent.worker start"
-timeout /t 2 /nobreak >nul
-echo  ✓ Agent worker started (demo mode if LiveKit not configured)
+timeout /t 3 /nobreak >nul
+echo  ✓ Agent worker started
 
 :: ── Start React dashboard ─────────────────────────────────────────────────
 echo [4/4] Starting admin dashboard (port 5173)...
