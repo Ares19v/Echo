@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     SARVAM_STT_MODEL: str = "saarika:v2.5"
     SARVAM_TTS_MODEL: str = "bulbul:v2"     # upgrade to v3 when funded
     SARVAM_TTS_SPEED: float = 0.92          # slightly slower for medical context
-    SARVAM_DEFAULT_VOICE: str = "anushka"     # warm, professional Indian female voice
+    SARVAM_DEFAULT_VOICE: str = "ritu"     # warm, professional Indian female voice
 
     # ─── Gemini (LLM) ───────────────────────────────────────────────────────
     GEMINI_API_KEY: str | None = None

@@ -101,7 +101,7 @@ class SarvamTTS(tts.TTS):
         *,
         api_key: str,
         model: str = "bulbul:v2",
-        voice: str = "anushka",
+        voice: str = "ritu",
         language: str = "en-IN",
         speed: float = 0.92,
     ) -> None:
