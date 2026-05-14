@@ -10,8 +10,7 @@ import uuid
 
 from google import genai
 from google.genai import types as genai_types
-from livekit.agents import APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS
-from livekit.agents import llm
+from livekit.agents import DEFAULT_API_CONNECT_OPTIONS, APIConnectOptions, llm
 from livekit.agents.llm import (
     ChatChunk,
     ChatContext,

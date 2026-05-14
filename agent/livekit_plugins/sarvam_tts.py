@@ -12,9 +12,8 @@ import wave
 from dataclasses import dataclass
 
 import httpx
-from livekit.agents import APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS
-from livekit.agents import tts, utils
-from livekit.agents.tts import ChunkedStream, SynthesizedAudio
+from livekit.agents import DEFAULT_API_CONNECT_OPTIONS, APIConnectOptions, tts
+from livekit.agents.tts import ChunkedStream
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +34,11 @@ class SarvamTTSOptions:
 class SarvamChunkedStream(ChunkedStream):
     """Single-shot Sarvam TTS request wrapped as a ChunkedStream."""
 
-    def __init__(self, *, tts: "SarvamTTS", input_text: str, conn_options: APIConnectOptions) -> None:
+    def __init__(self, *, tts: SarvamTTS, input_text: str, conn_options: APIConnectOptions) -> None:
         super().__init__(tts=tts, input_text=input_text, conn_options=conn_options)
         self._tts_ref: SarvamTTS = tts  # type: ignore[assignment]
 
-    async def _run(self, output_emitter: "tts.AudioEmitter") -> None:
+    async def _run(self, output_emitter: tts.AudioEmitter) -> None:
         request_id = str(uuid.uuid4())
         opts = self._tts_ref._opts
 

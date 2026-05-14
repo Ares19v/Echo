@@ -1,10 +1,10 @@
+/* global TextDecoder */
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Room,
   RoomEvent,
   Track,
   createLocalAudioTrack,
-  ParticipantEvent,
 } from 'livekit-client'
 import { Phone, PhoneOff, Mic, MicOff, Loader, Radio, MessageSquare, AlertCircle } from 'lucide-react'
 
@@ -95,7 +95,7 @@ export default function Simulator() {
         endCall()
       })
 
-      room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      room.on(RoomEvent.TrackSubscribed, (track) => {
         if (track.kind === Track.Kind.Audio) {
           const el = track.attach()
           el.style.display = 'none'

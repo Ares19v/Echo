@@ -18,18 +18,18 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
-from livekit.plugins import silero, openai
+from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli  # noqa: E402
+from livekit.plugins import openai, silero  # noqa: E402
 
-from agent.livekit_plugins import SarvamSTT, SarvamTTS
-from agent.tools import (
+from agent.livekit_plugins import SarvamSTT, SarvamTTS  # noqa: E402
+from agent.tools import (  # noqa: E402
     book_appointment,
     cancel_appointment,
     check_doctor_availability,
     get_clinic_info,
     list_doctors,
 )
-from config.settings import get_settings
+from config.settings import get_settings  # noqa: E402
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

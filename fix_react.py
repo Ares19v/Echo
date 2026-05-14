@@ -5,7 +5,7 @@ ROOT = r"C:\Users\Devansh Tyagi\Desktop\Projects\Echo\dashboard\src"
 
 def fix_file(filename, replacements):
     path = os.path.join(ROOT, filename)
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         text = f.read()
     for old, new in replacements:
         text = text.replace(old, new)
@@ -28,7 +28,7 @@ fix_file(r"pages\EscalationQueue.jsx", [
 # Let's read it to see exactly where tick is defined.
 # I'll use regex for the single quote in `It's` or similar.
 path = os.path.join(ROOT, r"pages\LiveMonitor.jsx")
-with open(path, "r", encoding="utf-8") as f:
+with open(path, encoding="utf-8") as f:
     lm = f.read()
 lm = re.sub(r'const tick = setInterval\(\(\) => \{\n      // just force re-render for time\n    \}, 1000\)', 'const tick = setInterval(() => {}, 1000)', lm)
 lm = re.sub(r'const tick = setInterval\(\(\) => setNow\(Date\.now\(\)\), 1000\)', 'const tick = setInterval(() => {}, 1000)', lm)

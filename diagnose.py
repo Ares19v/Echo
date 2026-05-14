@@ -1,8 +1,7 @@
 import asyncio
-import os
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -12,7 +11,8 @@ load_dotenv(Path(__file__).parent / ".env")
 # Must set path so we can import project modules
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config.settings import get_settings
+from config.settings import get_settings  # noqa: E402
+
 
 class DiagnosticRunner:
     def __init__(self):
@@ -63,9 +63,10 @@ class DiagnosticRunner:
     async def check_sarvam_stt(self):
         print("\n--- Checking Sarvam STT ---")
         try:
-            from agent.livekit_plugins import SarvamSTT
             from livekit import rtc
             from livekit.agents.types import DEFAULT_API_CONNECT_OPTIONS
+
+            from agent.livekit_plugins import SarvamSTT
             stt = SarvamSTT(api_key=self.settings.SARVAM_API_KEY, model=self.settings.SARVAM_STT_MODEL)
             # Send 1 second of silence
             silence = rtc.AudioFrame(data=bytes(16000*2), sample_rate=16000, num_channels=1, samples_per_channel=16000)
@@ -79,8 +80,8 @@ class DiagnosticRunner:
     async def check_groq_llm(self):
         print("\n--- Checking Groq LLM ---")
         try:
-            from livekit.plugins import openai
             from livekit.agents.llm import ChatContext
+            from livekit.plugins import openai
             llm = openai.LLM(
                 api_key=self.settings.GROQ_API_KEY,
                 base_url="https://api.groq.com/openai/v1",
@@ -102,7 +103,7 @@ class DiagnosticRunner:
     async def check_livekit_connection(self):
         print("\n--- Checking LiveKit Connection ---")
         try:
-            from livekit.api import LiveKitAPI, ListRoomsRequest
+            from livekit.api import ListRoomsRequest, LiveKitAPI
             api = LiveKitAPI(
                 self.settings.LIVEKIT_URL,
                 self.settings.LIVEKIT_API_KEY,
@@ -119,7 +120,7 @@ class DiagnosticRunner:
 
     async def run_all(self):
         print(f"Starting Echo Diagnostics at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
+
         env_ok = await self.check_env_vars()
         if not env_ok:
             print("\n⚠️ Environment variables missing. Skipping external API checks.")
@@ -135,7 +136,7 @@ class DiagnosticRunner:
         for res in self.results:
             print(res)
         print("="*60)
-        
+
         if self.has_failures:
             print("\n[FAIL] SOME CHECKS FAILED. See details above.")
             sys.exit(1)

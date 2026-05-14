@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # ─── API Server ─────────────────────────────────────────────────────────
-    API_HOST: str = "0.0.0.0"
+    API_HOST: str = "0.0.0.0"  # nosec B104
     API_PORT: int = 8000
     API_SECRET_KEY: str = Field(
         description="Secret key for JWT signing and CSRF protection.",

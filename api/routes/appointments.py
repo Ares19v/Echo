@@ -59,9 +59,10 @@ async def list_appointments(
 ) -> JSONResponse:
     """List all appointments, optionally filtered by status or doctor name."""
     try:
+        from sqlalchemy import desc, select
+
         from db.models import Appointment
         from db.session import get_db_context
-        from sqlalchemy import select, desc
 
         async with get_db_context() as db:
             q = select(Appointment).order_by(desc(Appointment.created_at)).limit(limit)
@@ -98,9 +99,10 @@ async def list_appointments(
 async def appointment_stats() -> JSONResponse:
     """Quick stats for the appointments dashboard card."""
     try:
+        from sqlalchemy import func, select
+
         from db.models import Appointment
         from db.session import get_db_context
-        from sqlalchemy import select, func
 
         async with get_db_context() as db:
             total = await db.scalar(select(func.count(Appointment.id)))
@@ -118,9 +120,10 @@ async def appointment_stats() -> JSONResponse:
 async def cancel_appointment_admin(appointment_id: UUID) -> JSONResponse:
     """Cancel an appointment from the admin dashboard."""
     try:
+        from sqlalchemy import select
+
         from db.models import Appointment, AppointmentStatus
         from db.session import get_db_context
-        from sqlalchemy import select
 
         async with get_db_context() as db:
             result = await db.execute(select(Appointment).where(Appointment.id == appointment_id))
@@ -142,9 +145,10 @@ async def cancel_appointment_admin(appointment_id: UUID) -> JSONResponse:
 async def list_sms_log(limit: int = Query(50, le=200)) -> JSONResponse:
     """Return all demo SMS notifications — shows what would be sent to patients."""
     try:
+        from sqlalchemy import desc, select
+
         from db.models import SMSLog
         from db.session import get_db_context
-        from sqlalchemy import select, desc
 
         async with get_db_context() as db:
             q = select(SMSLog).order_by(desc(SMSLog.sent_at)).limit(limit)
