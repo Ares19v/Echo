@@ -27,7 +27,7 @@ _NUM_CHANNELS = 1
 class SarvamTTSOptions:
     api_key: str
     model: str = "bulbul:v2"
-    voice: str = "meera"
+    voice: str = "vidya"  # must be compatible with model (bulbul:v2 voices: vidya, abhilash, manisha, arya, karun, hitesh)
     language_code: str = "en-IN"
     speed: float = 0.92
 
@@ -79,7 +79,7 @@ class SarvamChunkedStream(ChunkedStream):
             logger.debug("Sarvam TTS: %r -> %d bytes PCM", self._input_text[:60], len(pcm_bytes))
 
         except Exception as e:
-            logger.warning("Sarvam TTS error: %s", e)
+            logger.warning("Sarvam TTS error (voice=%s, model=%s): %s", opts.voice, opts.model, e)
             # Push 0.5s of silence so the pipeline does not stall
             silence = bytes(int(_SAMPLE_RATE * 0.5) * _NUM_CHANNELS * 2)
             output_emitter.push(silence)
@@ -101,7 +101,7 @@ class SarvamTTS(tts.TTS):
         *,
         api_key: str,
         model: str = "bulbul:v2",
-        voice: str = "ritu",
+        voice: str = "vidya",
         language: str = "en-IN",
         speed: float = 0.92,
     ) -> None:

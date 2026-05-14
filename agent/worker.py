@@ -19,9 +19,9 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
-from livekit.plugins import silero
+from livekit.plugins import silero, openai
 
-from agent.livekit_plugins import GeminiLLM, SarvamSTT, SarvamTTS
+from agent.livekit_plugins import SarvamSTT, SarvamTTS
 from config.settings import get_settings
 
 if sys.platform == "win32":
@@ -73,12 +73,10 @@ async def entrypoint(ctx: JobContext) -> None:
             model=settings.SARVAM_STT_MODEL,
             language=settings.DEFAULT_LANGUAGE,
         ),
-        llm=GeminiLLM(
-            api_key=settings.GEMINI_API_KEY,
-            model=settings.GEMINI_MODEL,
-            temperature=settings.GEMINI_TEMPERATURE,
-            max_tokens=settings.GEMINI_MAX_TOKENS,
-            system_prompt=_SYSTEM_PROMPT,
+        llm=openai.LLM(
+            api_key=settings.GROQ_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+            model=settings.GROQ_MODEL,
         ),
         tts=SarvamTTS(
             api_key=settings.SARVAM_API_KEY,

@@ -84,11 +84,11 @@ class Settings(BaseSettings):
     SARVAM_STT_MODEL: str = "saarika:v2.5"
     SARVAM_TTS_MODEL: str = "bulbul:v2"     # upgrade to v3 when funded
     SARVAM_TTS_SPEED: float = 0.92          # slightly slower for medical context
-    SARVAM_DEFAULT_VOICE: str = "ritu"     # warm, professional Indian female voice
+    SARVAM_DEFAULT_VOICE: str = "vidya"     # warm, professional Indian female voice
 
     # ─── Gemini (LLM) ───────────────────────────────────────────────────────
-    GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GROQ_API_KEY: str | None = None
+    GROQ_MODEL: str = "llama-3.1-8b-instant"
     GEMINI_TEMPERATURE: float = 0.3         # low temp for consistent clinical replies
     GEMINI_MAX_TOKENS: int = 512
 
@@ -147,7 +147,7 @@ class Settings(BaseSettings):
 
     @property
     def gemini_ready(self) -> bool:
-        return bool(self.GEMINI_API_KEY)
+        return bool(self.GROQ_API_KEY)
 
     @property
     def livekit_ready(self) -> bool:
