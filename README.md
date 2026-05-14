@@ -33,22 +33,55 @@
 
 ## 🏗️ Architecture
 
-```
-Exotel (SIP/WebSocket)
-        ↓
-  LiveKit Agents
-        ↓
-  ┌─────────────────────────────────┐
-  │  Echo Agent Worker (Python)     │
-  │  Sarvam STT → Gemini LLM       │
-  │  → HMS Tools → Sarvam TTS      │
-  └─────────────────────────────────┘
-        ↓
-  FastAPI (REST + WebSocket)
-        ↓
-  PostgreSQL + Redis
-        ↓
-  React Admin Dashboard
+```mermaid
+graph TD
+    %% Styling
+    classDef external fill:#f9f9f9,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef core fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef data fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef frontend fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+
+    %% Nodes
+    subgraph "Telephony Provider"
+        Exotel["Exotel (SIP Trunking)"]:::external
+    end
+
+    subgraph "Real-time Infrastructure"
+        LiveKit["LiveKit Cloud (WebRTC / WebSocket)"]:::external
+    end
+
+    subgraph "Echo AI Pipeline"
+        Worker["Python Agent Worker"]:::core
+        STT["Sarvam STT (Speech-to-Text)"]:::core
+        LLM["Groq Llama-3.1 (Reasoning & Tools)"]:::core
+        TTS["Sarvam TTS (Text-to-Speech)"]:::core
+        Tools["HMS Function Tools (Booking, Triage)"]:::core
+        
+        Worker --> STT
+        STT --> LLM
+        LLM <--> Tools
+        LLM --> TTS
+    end
+
+    subgraph "Backend Services"
+        FastAPI["FastAPI Server (REST & Webhooks)"]:::core
+    end
+
+    subgraph "Data Persistence"
+        Supabase["Supabase (PostgreSQL)"]:::data
+    end
+
+    subgraph "User Interface"
+        Dashboard["React Admin Dashboard"]:::frontend
+    end
+
+    %% Flow
+    Exotel -- "SIP Audio In/Out" --> LiveKit
+    LiveKit <== "WebSocket Stream" ==> Worker
+    Worker -- "Call Logs & Telemetry" --> FastAPI
+    FastAPI <== "ORM" ==> Supabase
+    Tools -. "DB Read/Write" .-> Supabase
+    Dashboard <== "REST API" ==> FastAPI
 ```
 
 ---
