@@ -50,7 +50,7 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8081 " ^| findstr "LISTENIN
     taskkill /F /PID %%p >nul 2>&1
 )
 timeout /t 1 /nobreak >nul
-start "Echo Agent Worker" cmd /k "call .venv\Scripts\activate.bat && python -m agent.worker start"
+start "Echo Agent Worker" cmd /k "call .venv\Scripts\activate.bat && python -m agent.worker dev"
 timeout /t 3 /nobreak >nul
 echo  ✓ Agent worker started
 

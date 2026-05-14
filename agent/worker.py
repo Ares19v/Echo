@@ -1,12 +1,9 @@
 """
 Echo – LiveKit Agent Worker.
-Properly wired voice pipeline using AgentSession + Silero VAD + Sarvam STT/TTS + Gemini LLM.
+Voice pipeline: Silero VAD + Sarvam STT/TTS + Gemini LLM.
 
-Running (production):
-    python -m agent.worker
-
-Running (from Run_Project.bat):
-    python -m agent.worker start
+Start (dev mode):
+    python -m agent.worker dev
 """
 
 from __future__ import annotations
@@ -14,10 +11,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
-# Load .env before anything else so LIVEKIT_URL etc. are available to the worker CLI
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
@@ -32,28 +30,21 @@ if sys.platform == "win32":
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-_PROMPT_DIR = Path(__file__).parent / "prompts"
-
 _SYSTEM_PROMPT = """
-You are Echo, an AI healthcare voice assistant for a clinic. 
+You are Echo, an AI healthcare voice assistant for a clinic.
 Be concise (1-3 sentences per response) since this is a voice call.
 Help patients with: appointment booking, lab reports, OPD timings, prescriptions, and general clinic questions.
 Always be polite, empathetic, and professional.
-Start by asking the patient how you can help them today.
 
 If the patient wants to book an appointment, ask for their preferred day and time.
-Once they provide a day and time, confirm the booking and tell them their appointment is confirmed. 
-For the purposes of this demo, you have already successfully written the appointment to the database.
+Once they provide a day and time, confirm the booking is confirmed.
+For this demo, treat bookings as already written to the database.
 
 If someone has an emergency, immediately advise them to call 112 or go to the nearest emergency room.
-If a patient is distressed or asks for a human, say you will transfer them.
+If a patient asks for a human, say you will transfer them.
 Keep answers short and clear for voice.
 """.strip()
 
-
-from datetime import datetime, UTC
-from db.session import get_db_context
-from db.models import CallLog, CallOutcome, CallIntent
 
 class EchoAgent(Agent):
     """Echo healthcare voice agent — one instance per call."""
@@ -62,10 +53,10 @@ class EchoAgent(Agent):
         super().__init__(instructions=_SYSTEM_PROMPT)
 
     async def on_enter(self) -> None:
-        """Called when the agent joins a room — plays the opening greeting."""
+        """Greet the patient as soon as the agent joins."""
         await self.session.say(
-            "Namaste! You've reached the clinic. I'm Echo, your AI assistant. "
-            "This call may be recorded for quality purposes. How can I help you today?",
+            "Namaste! You've reached the clinic. I'm Echo, your AI healthcare assistant. "
+            "How can I help you today?",
             allow_interruptions=True,
         )
 
@@ -75,9 +66,6 @@ async def entrypoint(ctx: JobContext) -> None:
     logger.info("New Echo call session — room: %s", ctx.room.name)
     started_at = datetime.now(UTC)
 
-    await ctx.connect()
-
-    # Build the voice pipeline
     session = AgentSession(
         vad=silero.VAD.load(),
         stt=SarvamSTT(
@@ -101,33 +89,37 @@ async def entrypoint(ctx: JobContext) -> None:
         ),
     )
 
-    disconnect_fut = asyncio.Future()
-    
+    # Start the session — this internally handles ctx.connect() and room joining
+    await session.start(EchoAgent(), room=ctx.room)
+    logger.info("Echo session started for room %s", ctx.room.name)
+
+    # session.start() is non-blocking (returns once started), so we wait for the room to close
+    # by monitoring the room disconnect event
+    disconnect_fut: asyncio.Future[None] = asyncio.get_event_loop().create_future()
+
     @ctx.room.on("disconnected")
-    def on_disconnect(*args, **kwargs):
+    def _on_disconnect(*_args: object) -> None:
         if not disconnect_fut.done():
             disconnect_fut.set_result(None)
 
-    await session.start(ctx.room, agent=EchoAgent())
-    logger.info("Echo session started for room %s", ctx.room.name)
-
-    # Wait for the call to end
     await disconnect_fut
-    logger.info("Room disconnected, saving call log for %s", ctx.room.name)
+    logger.info("Room disconnected — saving call log for %s", ctx.room.name)
 
+    # Persist call log to database (best-effort)
     try:
+        from db.models import CallIntent, CallLog, CallOutcome
+        from db.session import get_db_context
+
         ended_at = datetime.now(UTC)
         duration = int((ended_at - started_at).total_seconds())
-        
-        transcript = []
-        if hasattr(session, "history"):
-            for msg in session.history.messages:
-                if getattr(msg, "text_content", None):
-                    transcript.append({
-                        "role": msg.role,
-                        "text": msg.text_content
-                    })
-        
+
+        transcript: list[dict] = []
+        if hasattr(session, "history") and session.history is not None:
+            for msg in session.history.messages():
+                text = getattr(msg, "text_content", None)
+                if text:
+                    transcript.append({"role": str(msg.role), "text": text})
+
         async with get_db_context() as db:
             log = CallLog(
                 livekit_room_name=ctx.room.name,
@@ -138,13 +130,12 @@ async def entrypoint(ctx: JobContext) -> None:
                 turn_count=len(transcript),
                 transcript=transcript,
                 outcome=CallOutcome.RESOLVED if len(transcript) > 2 else CallOutcome.ABANDONED,
-                primary_intent=CallIntent.UNKNOWN
+                primary_intent=CallIntent.UNKNOWN,
             )
             db.add(log)
-            # db.commit() is handled automatically by get_db_context()
-        logger.info("Saved call log for room %s successfully.", ctx.room.name)
-    except Exception as e:
-        logger.error("Failed to save call log: %s", e)
+        logger.info("Saved call log for room %s", ctx.room.name)
+    except Exception as exc:
+        logger.warning("Could not save call log (non-fatal): %s", exc)
 
 
 if __name__ == "__main__":

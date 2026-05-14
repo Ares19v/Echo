@@ -1,6 +1,6 @@
 """
-Echo – Gemini LLM plugin for LiveKit Agents.
-Uses the new google-genai SDK (google.genai) for Gemini 2.x models.
+Echo – Gemini LLM plugin for LiveKit Agents 1.5.8.
+Uses the google-genai SDK for Gemini 2.x models.
 """
 from __future__ import annotations
 
@@ -23,26 +23,26 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiLLMStream(LLMStream):
-    """Generates a Gemini response and emits it as ChatChunks."""
+    """Generates a Gemini response and emits it as a single ChatChunk."""
 
     async def _run(self) -> None:
         request_id = str(uuid.uuid4())
 
-        # Build conversation from ChatContext
+        # Build conversation history from ChatContext
         contents: list[genai_types.Content] = []
-        for msg in self._chat_ctx.messages:
+        for msg in self._chat_ctx.messages():
             text = msg.text_content or ""
             if not text:
                 continue
             role = "user" if msg.role == "user" else "model"
-            contents.append(genai_types.Content(role=role, parts=[genai_types.Part(text=text)]))
+            contents.append(
+                genai_types.Content(role=role, parts=[genai_types.Part(text=text)])
+            )
 
         if not contents:
+            # Nothing to process — emit an empty chunk and exit
             self._event_ch.send_nowait(
-                ChatChunk(
-                    request_id=request_id,
-                    choices=[llm.Choice(delta=ChoiceDelta(role="assistant", content=""), index=0)],
-                )
+                ChatChunk(id=request_id, delta=ChoiceDelta(role="assistant", content=""))
             )
             return
 
@@ -68,13 +68,8 @@ class GeminiLLMStream(LLMStream):
 
         self._event_ch.send_nowait(
             ChatChunk(
-                request_id=request_id,
-                choices=[
-                    llm.Choice(
-                        delta=ChoiceDelta(role="assistant", content=text),
-                        index=0,
-                    )
-                ],
+                id=request_id,
+                delta=ChoiceDelta(role="assistant", content=text),
             )
         )
 

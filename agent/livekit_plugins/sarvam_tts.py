@@ -1,10 +1,9 @@
 """
-Echo – Sarvam TTS plugin for LiveKit Agents.
+Echo – Sarvam TTS plugin for LiveKit Agents 1.5.8.
 Wraps Sarvam's Bulbul v2 TTS into the livekit-agents TTS interface.
 """
 from __future__ import annotations
 
-import asyncio
 import base64
 import io
 import logging
@@ -13,9 +12,8 @@ import wave
 from dataclasses import dataclass
 
 import httpx
-from livekit import rtc
 from livekit.agents import APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS
-from livekit.agents import tts
+from livekit.agents import tts, utils
 from livekit.agents.tts import ChunkedStream, SynthesizedAudio
 
 logger = logging.getLogger(__name__)
@@ -41,9 +39,19 @@ class SarvamChunkedStream(ChunkedStream):
         super().__init__(tts=tts, input_text=input_text, conn_options=conn_options)
         self._tts_ref: SarvamTTS = tts  # type: ignore[assignment]
 
-    async def _run(self) -> None:
+    async def _run(self, output_emitter: "tts.AudioEmitter") -> None:
         request_id = str(uuid.uuid4())
         opts = self._tts_ref._opts
+
+        # MUST call initialize() before any push() — required by livekit-agents 1.5.8
+        # stream=False (default) auto-starts a segment; do NOT call start_segment() here
+        output_emitter.initialize(
+            request_id=request_id,
+            sample_rate=_SAMPLE_RATE,
+            num_channels=_NUM_CHANNELS,
+            mime_type="audio/pcm",
+        )
+
         try:
             async with httpx.AsyncClient(timeout=12.0) as client:
                 resp = await client.post(
@@ -67,36 +75,15 @@ class SarvamChunkedStream(ChunkedStream):
                 audio_b64 = data["audios"][0]
                 pcm_bytes = self._wav_b64_to_pcm(audio_b64)
 
-            frame = rtc.AudioFrame(
-                data=pcm_bytes,
-                sample_rate=_SAMPLE_RATE,
-                num_channels=_NUM_CHANNELS,
-                samples_per_channel=len(pcm_bytes) // 2,
-            )
-            self._event_ch.send_nowait(
-                SynthesizedAudio(
-                    frame=frame,
-                    request_id=request_id,
-                    is_final=True,
-                    segment_id=request_id,
-                    delta_text=self._input_text,
-                )
-            )
-            logger.debug("Sarvam TTS: %r → %d bytes PCM", self._input_text[:60], len(pcm_bytes))
+            output_emitter.push(pcm_bytes)
+            logger.debug("Sarvam TTS: %r -> %d bytes PCM", self._input_text[:60], len(pcm_bytes))
 
         except Exception as e:
             logger.warning("Sarvam TTS error: %s", e)
-            # Send silence on failure so the pipeline doesn't hang
-            silence = bytes(int(_SAMPLE_RATE * 0.5) * 2)  # 0.5s silence
-            frame = rtc.AudioFrame(
-                data=silence,
-                sample_rate=_SAMPLE_RATE,
-                num_channels=_NUM_CHANNELS,
-                samples_per_channel=len(silence) // 2,
-            )
-            self._event_ch.send_nowait(
-                SynthesizedAudio(frame=frame, request_id=request_id, is_final=True)
-            )
+            # Push 0.5s of silence so the pipeline does not stall
+            silence = bytes(int(_SAMPLE_RATE * 0.5) * _NUM_CHANNELS * 2)
+            output_emitter.push(silence)
+
 
     @staticmethod
     def _wav_b64_to_pcm(b64: str) -> bytes:
@@ -114,7 +101,7 @@ class SarvamTTS(tts.TTS):
         *,
         api_key: str,
         model: str = "bulbul:v2",
-        voice: str = "meera",
+        voice: str = "anushka",
         language: str = "en-IN",
         speed: float = 0.92,
     ) -> None:
@@ -130,6 +117,14 @@ class SarvamTTS(tts.TTS):
             language_code=language,
             speed=speed,
         )
+
+    @property
+    def provider(self) -> str:
+        return "sarvam"
+
+    @property
+    def model(self) -> str:
+        return self._opts.model
 
     def synthesize(
         self,

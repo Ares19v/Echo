@@ -70,7 +70,8 @@ export default function Simulator() {
 
     try {
       // 1. Get LiveKit token from backend
-      const res = await fetch(`${API_BASE}/admin/simulator/token?room_name=echo-demo&identity=admin-${Date.now()}`, {
+      const roomName = `echo-demo-${Date.now()}`
+      const res = await fetch(`${API_BASE}/admin/simulator/token?room_name=${roomName}&identity=admin-${Date.now()}`, {
         method: 'POST',
         headers: { 'X-Admin-Key': ADMIN_KEY },
       })
