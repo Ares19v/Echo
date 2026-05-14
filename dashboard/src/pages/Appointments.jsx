@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { CalendarIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline'
-import { CheckCircleIcon } from '@heroicons/react/24/solid'
+import { Calendar, MessageSquare, CheckCircle } from 'lucide-react'
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState([])
@@ -43,7 +42,7 @@ export default function Appointments() {
         {/* Appointments Table */}
         <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden shadow-xl backdrop-blur-sm">
           <div className="p-4 border-b border-gray-700/50 flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-indigo-400" />
+            <Calendar className="w-5 h-5 text-indigo-400" />
             <h2 className="text-lg font-semibold text-white">Latest Bookings</h2>
           </div>
           <div className="divide-y divide-gray-700/50 max-h-[600px] overflow-y-auto">
@@ -58,7 +57,7 @@ export default function Appointments() {
                       <div className="text-sm text-gray-400">{a.patient_phone}</div>
                     </div>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      <CheckCircleIcon className="w-3 h-3" />
+                      <CheckCircle className="w-3 h-3" />
                       {a.status}
                     </span>
                   </div>
@@ -75,7 +74,7 @@ export default function Appointments() {
         {/* SMS Log */}
         <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden shadow-xl backdrop-blur-sm">
           <div className="p-4 border-b border-gray-700/50 flex items-center gap-2">
-            <ChatBubbleLeftEllipsisIcon className="w-5 h-5 text-emerald-400" />
+            <MessageSquare className="w-5 h-5 text-emerald-400" />
             <h2 className="text-lg font-semibold text-white">Outbound SMS (Demo)</h2>
           </div>
           <div className="divide-y divide-gray-700/50 max-h-[600px] overflow-y-auto bg-gray-900/30">
@@ -86,7 +85,7 @@ export default function Appointments() {
                 <div key={sms.id} className="p-4 flex gap-4">
                   <div className="flex-shrink-0 mt-1">
                     <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-emerald-400" />
+                      <MessageSquare className="w-4 h-4 text-emerald-400" />
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
