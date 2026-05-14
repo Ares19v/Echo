@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from api.routes import admin, dashboard, webhooks
+from api.routes import admin, appointments, dashboard, webhooks
 from config.settings import get_settings
 from db.session import create_all_tables
 
@@ -39,10 +39,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Echo – AI Healthcare Voice Agent",
+    title="Echo – Healing Hands Clinic AI Receptionist",
     description=(
-        "Backend API for Echo: inbound call management, dashboard data, "
-        "and Exotel webhook processing."
+        "Backend API for Echo: AI voice receptionist for Healing Hands Clinic. "
+        "Handles appointment booking, call management, dashboard data, and Exotel webhook processing."
     ),
     version=settings.APP_VERSION,
     docs_url="/docs" if not settings.is_production else None,
@@ -63,6 +63,7 @@ app.add_middleware(
 app.include_router(webhooks.router, prefix="/webhooks", tags=["Telephony Webhooks"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Admin Dashboard"])
 app.include_router(admin.router, prefix="/admin", tags=["Admin Settings"])
+app.include_router(appointments.router, prefix="/appointments", tags=["Appointments"])
 
 
 # ─── Health ────────────────────────────────────────────────────────────────────

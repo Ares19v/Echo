@@ -46,6 +46,19 @@ class CallOutcome(StrEnum):
     FAILED = "failed"               # Technical failure
 
 
+class AppointmentStatus(StrEnum):
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    RESCHEDULED = "rescheduled"
+    COMPLETED = "completed"
+    NO_SHOW = "no_show"
+
+
+class SMSStatus(StrEnum):
+    SENT = "sent"           # Would be sent via Exotel in production
+    DEMO = "demo"           # Logged for visual demo only
+
+
 class CallIntent(StrEnum):
     APPOINTMENT_BOOK = "appointment_book"
     APPOINTMENT_CANCEL = "appointment_cancel"
@@ -259,3 +272,54 @@ class SystemHealthSnapshot(Base):
     recorded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
+
+
+class Appointment(Base):
+    """
+    Stores appointments booked by the AI agent during calls.
+    """
+    __tablename__ = "appointments"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    call_log_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("call_logs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    patient_name: Mapped[str] = mapped_column(String(256))
+    patient_phone: Mapped[str] = mapped_column(String(20), index=True)
+    doctor_name: Mapped[str] = mapped_column(String(256))
+    department: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    appointment_date: Mapped[str] = mapped_column(String(64))   # "Monday 3rd June" etc.
+    appointment_time: Mapped[str] = mapped_column(String(64))   # "10:30 AM"
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[AppointmentStatus] = mapped_column(
+        Enum(AppointmentStatus), default=AppointmentStatus.CONFIRMED
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    booked_via: Mapped[str] = mapped_column(String(32), default="voice_agent")  # voice_agent | walk_in | online
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SMSLog(Base):
+    """
+    Visual demo log of SMS notifications that would be sent via Exotel in production.
+    In demo mode these are just stored here; real SMS sending is toggled via EXOTEL_ENABLED.
+    """
+    __tablename__ = "sms_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    appointment_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("appointments.id", ondelete="SET NULL"), nullable=True
+    )
+    recipient_phone: Mapped[str] = mapped_column(String(20))
+    recipient_name: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    message_body: Mapped[str] = mapped_column(Text)
+    message_type: Mapped[str] = mapped_column(String(64))  # "appointment_confirmation" | "reminder" | "cancellation"
+    status: Mapped[SMSStatus] = mapped_column(Enum(SMSStatus), default=SMSStatus.DEMO)
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

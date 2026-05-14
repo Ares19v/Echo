@@ -1,6 +1,6 @@
 """
-Echo – LiveKit Agent Worker.
-Voice pipeline: Silero VAD + Sarvam STT/TTS + Gemini LLM.
+Echo – LiveKit Agent Worker for Healing Hands Clinic.
+Voice pipeline: Silero VAD + Sarvam STT/TTS + Groq LLM + Appointment Tools.
 
 Start (dev mode):
     python -m agent.worker dev
@@ -22,6 +22,13 @@ from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
 from livekit.plugins import silero, openai
 
 from agent.livekit_plugins import SarvamSTT, SarvamTTS
+from agent.tools import (
+    book_appointment,
+    cancel_appointment,
+    check_doctor_availability,
+    get_clinic_info,
+    list_doctors,
+)
 from config.settings import get_settings
 
 if sys.platform == "win32":
@@ -31,39 +38,64 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 _SYSTEM_PROMPT = """
-You are Echo, an AI healthcare voice assistant for a clinic.
-Be concise (1-3 sentences per response) since this is a voice call.
-Help patients with: appointment booking, lab reports, OPD timings, prescriptions, and general clinic questions.
-Always be polite, empathetic, and professional.
+You are Echo, the AI voice receptionist for Healing Hands Clinic, Bangalore.
+You speak clearly and warmly in a professional medical-reception tone.
+Keep every response to 1-3 short sentences — this is a voice call, not a chat.
 
-If the patient wants to book an appointment, ask for their preferred day and time.
-Once they provide a day and time, confirm the booking is confirmed.
-For this demo, treat bookings as already written to the database.
+CLINIC AT A GLANCE:
+- Name: Healing Hands Clinic
+- Address: 42, MG Road, Koramangala, Bangalore – 560095
+- Phone: +91-80-4567-8900
+- OPD Hours: Monday–Saturday 9 AM–7 PM | Sunday 10 AM–2 PM
+- Emergency (24x7): +91-80-4567-8999
 
-If someone has an emergency, immediately advise them to call 112 or go to the nearest emergency room.
-If a patient asks for a human, say you will transfer them.
-Keep answers short and clear for voice.
+DOCTORS (key roster):
+- Dr. Priya Sharma — General Medicine (Mon, Wed, Fri)
+- Dr. Rajan Mehta — Orthopedics (Tue, Thu, Sat)
+- Dr. Ananya Iyer — Pediatrics (Mon–Fri)
+- Dr. Suresh Nair — Cardiology (Mon, Wed, Fri)
+- Dr. Kavya Reddy — Dermatology (Tue, Thu, Sat)
+
+SERVICES: Blood tests, ECG, X-Ray, Ultrasound, Physiotherapy, Vaccination, Minor Surgery, Diabetes Clinic, Hypertension Clinic.
+
+RULES:
+1. To book an appointment, collect: patient name, phone number, preferred doctor, date and time. Then call the book_appointment tool.
+2. Always confirm back the details before booking.
+3. If a patient reports chest pain, breathing difficulty, or stroke symptoms — immediately say "Please call 112 or go to the nearest emergency room right now."
+4. If they ask for a human, say "I'll transfer you to our front desk. Please hold."
+5. Speak naturally — avoid listing bullet points out loud.
+6. If asked about doctors not in our clinic, politely say we don't have that specialist and suggest the closest match.
 """.strip()
 
 
 class EchoAgent(Agent):
-    """Echo healthcare voice agent — one instance per call."""
+    """Echo — AI voice receptionist for Healing Hands Clinic."""
 
     def __init__(self) -> None:
-        super().__init__(instructions=_SYSTEM_PROMPT)
+        super().__init__(
+            instructions=_SYSTEM_PROMPT,
+            tools=[
+                get_clinic_info,
+                list_doctors,
+                check_doctor_availability,
+                book_appointment,
+                cancel_appointment,
+            ],
+        )
 
     async def on_enter(self) -> None:
-        """Greet the patient as soon as the agent joins."""
+        """Greet the caller as soon as the agent joins."""
         await self.session.say(
-            "Namaste! You've reached the clinic. I'm Echo, your AI healthcare assistant. "
-            "How can I help you today?",
+            "Namaste! Thank you for calling Healing Hands Clinic. "
+            "I'm Echo, your AI receptionist. "
+            "How may I help you today?",
             allow_interruptions=True,
         )
 
 
 async def entrypoint(ctx: JobContext) -> None:
     """One LiveKit job = one call session."""
-    logger.info("New Echo call session — room: %s", ctx.room.name)
+    logger.info("New call session — room: %s", ctx.room.name)
     started_at = datetime.now(UTC)
 
     session = AgentSession(
@@ -87,12 +119,9 @@ async def entrypoint(ctx: JobContext) -> None:
         ),
     )
 
-    # Start the session — this internally handles ctx.connect() and room joining
     await session.start(EchoAgent(), room=ctx.room)
-    logger.info("Echo session started for room %s", ctx.room.name)
+    logger.info("Echo session started — room: %s", ctx.room.name)
 
-    # session.start() is non-blocking (returns once started), so we wait for the room to close
-    # by monitoring the room disconnect event
     disconnect_fut: asyncio.Future[None] = asyncio.get_event_loop().create_future()
 
     @ctx.room.on("disconnected")
@@ -103,7 +132,7 @@ async def entrypoint(ctx: JobContext) -> None:
     await disconnect_fut
     logger.info("Room disconnected — saving call log for %s", ctx.room.name)
 
-    # Persist call log to database (best-effort)
+    # Persist call log (best-effort)
     try:
         from db.models import CallIntent, CallLog, CallOutcome
         from db.session import get_db_context
@@ -131,7 +160,7 @@ async def entrypoint(ctx: JobContext) -> None:
                 primary_intent=CallIntent.UNKNOWN,
             )
             db.add(log)
-        logger.info("Saved call log for room %s", ctx.room.name)
+        logger.info("Call log saved for %s", ctx.room.name)
     except Exception as exc:
         logger.warning("Could not save call log (non-fatal): %s", exc)
 
