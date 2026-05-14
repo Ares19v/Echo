@@ -8,6 +8,7 @@ import EscalationQueue from './pages/EscalationQueue'
 import SystemHealth from './pages/SystemHealth'
 import Settings from './pages/Settings'
 import Simulator from './pages/Simulator'
+import Appointments from './pages/Appointments'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="calls"       element={<CallLog />} />
           <Route path="calls/:id"   element={<TranscriptViewer />} />
           <Route path="escalations" element={<EscalationQueue />} />
+          <Route path="appointments"element={<Appointments />} />
           <Route path="health"      element={<SystemHealth />} />
           <Route path="settings"    element={<Settings />} />
           <Route path="simulator"   element={<Simulator />} />

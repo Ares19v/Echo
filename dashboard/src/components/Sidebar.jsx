@@ -1,14 +1,14 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  Activity, PhoneCall, AlertTriangle,
-  HeartPulse, Settings, Radio, Phone,
+  HeartPulse, Settings, Radio, Phone, CalendarDays, Activity, PhoneCall, AlertTriangle
 } from 'lucide-react'
 
 const NAV = [
   { to: '/monitor',     icon: Radio,          label: 'Live Monitor',   color: '#22d3a8' },
   { to: '/simulator',   icon: Phone,          label: 'Call Simulator', color: '#22d3a8' },
   { to: '/calls',       icon: PhoneCall,      label: 'Call Log',       color: '#3d7bfd' },
+  { to: '/appointments',icon: CalendarDays,   label: 'Appointments',   color: '#3d7bfd' },
   { to: '/escalations', icon: AlertTriangle,  label: 'Escalations',    color: '#f04747' },
   { to: '/health',      icon: HeartPulse,     label: 'System Health',  color: '#a78bfa' },
   { to: '/settings',    icon: Settings,       label: 'Settings',       color: '#f5a623' },
