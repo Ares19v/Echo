@@ -199,3 +199,8 @@ PRs welcome. Please open an issue first for major changes.
 ## 📄 License
 
 MIT © 2025 Devansh Tyagi
+
+---
+<p align="center">
+  Made by Devansh Tyagi @ 2026
+</p>
