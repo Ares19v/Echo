@@ -11,11 +11,8 @@ echo  ╚═══════════════════════�
 echo.
 
 :: ── Activate Python venv ──────────────────────────────────────────────────
-if not exist .venv (
-    echo  ✗ Virtual environment not found. Run INSTALL.bat first.
-    pause & exit /b 1
-)
-call .venv\Scripts\activate.bat
+:: Virtual environment check bypassed (using system Python if venv absent)
+if exist .venv\Scripts\activate.bat call .venv\Scripts\activate.bat
 
 :: ── Validate .env ─────────────────────────────────────────────────────────
 if not exist .env (
@@ -39,7 +36,7 @@ echo [2/4] Starting Echo API backend (port 8000)...
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do (
     taskkill /F /PID %%p >nul 2>&1
 )
-start "Echo Backend" cmd /k "call .venv\Scripts\activate.bat && python run_backend.py"
+start "Echo Backend" cmd /k "if exist .venv\Scripts\activate.bat call .venv\Scripts\activate.bat && python run_backend.py"
 timeout /t 3 /nobreak >nul
 echo  ✓ API backend started
 
@@ -50,7 +47,7 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8081 " ^| findstr "LISTENIN
     taskkill /F /PID %%p >nul 2>&1
 )
 timeout /t 1 /nobreak >nul
-start "Echo Agent Worker" cmd /k "call .venv\Scripts\activate.bat && python -m agent.worker dev"
+start "Echo Agent Worker" cmd /k "if exist .venv\Scripts\activate.bat call .venv\Scripts\activate.bat && python -m agent.worker dev"
 timeout /t 3 /nobreak >nul
 echo  ✓ Agent worker started
 
