@@ -1,55 +1,45 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
-export default function StatCard({ label, value, icon: Icon, color = '#3d7bfd', trend }) {
-  const [animated, setAnimated] = useState(false)
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 50)
-    return () => clearTimeout(t)
-  }, [])
+export default function StatCard({ label, value, icon: Icon, color = '#3d7bfd', trend, dark = false, negative = false }) {
+  const isPositive = trend !== undefined ? (typeof trend === 'number' ? trend >= 0 : !trend.startsWith('-')) : true
+  const displayTrend = trend !== undefined ? (typeof trend === 'number' ? `${trend >= 0 ? '+' : ''}${trend}%` : trend) : null
 
   return (
-    <div className={`stat-card anim-fade-up`} style={{ '--accent': color }}>
-      {/* Top accent line */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
-        height: 2,
-        background: `linear-gradient(90deg, transparent, ${color}44, transparent)`,
-      }} />
-
-      {/* Background glow */}
-      <div style={{
-        position: 'absolute', top: -30, right: -30,
-        width: 90, height: 90,
-        borderRadius: '50%',
-        background: `${color}0a`,
-        filter: 'blur(20px)',
-        pointerEvents: 'none',
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, position: 'relative' }}>
+    <div className={`stat-card anim-fade-up ${dark ? 'dark' : ''}`}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div
           className="stat-icon"
-          style={{ background: `${color}15` }}
+          style={{
+            background: dark ? 'rgba(255,255,255,0.1)' : `${color}14`,
+            color: dark ? '#fff' : color
+          }}
         >
-          <Icon size={17} color={color} strokeWidth={2} />
+          {Icon && <Icon size={18} strokeWidth={2.2} />}
         </div>
-        {trend !== undefined && (
+        {displayTrend && (
           <span style={{
-            fontSize: 11, fontWeight: 600, letterSpacing: '0.02em',
-            padding: '2px 8px', borderRadius: 999,
-            background: trend >= 0 ? 'var(--green-dim)' : 'var(--red-dim)',
-            color: trend >= 0 ? 'var(--green)' : 'var(--red)',
+            fontSize: 11.5,
+            fontWeight: 700,
+            padding: '3px 9px',
+            borderRadius: 'var(--r-pill)',
+            background: dark ? 'rgba(255,255,255,0.15)' : (negative ? 'var(--red-dim)' : 'var(--green-dim)'),
+            color: dark ? '#fff' : (negative ? 'var(--red)' : 'var(--green)'),
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 3
           }}>
-            {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
+            {isPositive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {displayTrend}
           </span>
         )}
       </div>
 
-      <div className={animated ? 'anim-count-up' : ''} style={{ position: 'relative' }}>
+      <div>
         <div className="stat-value">{value}</div>
         <div className="stat-label">{label}</div>
       </div>
     </div>
   )
 }
+

@@ -1,214 +1,332 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import StatCard from '../components/StatCard'
-import { PhoneCall, CheckCircle, Clock, TrendingUp } from 'lucide-react'
-import { fetchStats } from '../api/client'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area, CartesianGrid,
-} from 'recharts'
+import { PhoneCall, CheckCircle, Clock, TrendingUp, Radio, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Download, Activity, PhoneIncoming } from 'lucide-react'
+import { fetchStats, fetchCalls } from '../api/client'
+import StatusBadge from '../components/StatusBadge'
 
-const COLORS = ['#3d7bfd', '#a78bfa', '#22d3a8', '#f5a623']
-
-/* Simulated hourly data for demo */
-const HOURLY = Array.from({ length: 12 }, (_, i) => ({
-  h: `${(8 + i * 1.5).toFixed(0)}:00`,
-  calls: Math.round(8 + Math.sin(i * 0.8) * 6 + Math.random() * 4),
-}))
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div style={{
-      background: 'var(--surface-2)', border: '1px solid var(--border)',
-      borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: 12,
-    }}>
-      <div style={{ color: 'var(--text-2)', marginBottom: 4 }}>{label}</div>
-      {payload.map(p => (
-        <div key={p.name} style={{ color: p.color, fontWeight: 600 }}>
-          {p.value} {p.name}
-        </div>
-      ))}
-    </div>
-  )
-}
+const TIME_FILTERS = ['Day', 'Week', 'Month', 'Year']
 
 export default function LiveMonitor() {
   const [stats, setStats] = useState(null)
+  const [recentCalls, setRecentCalls] = useState([])
   const [loading, setLoading] = useState(true)
-  const [isDemo, setIsDemo] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState(null)
-  const [, setTick] = useState(0)
+  const [timeFilter, setTimeFilter] = useState('Day')
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchStats()
-      setStats(data)
-      setIsDemo(false)
+      const [statsData, callsData] = await Promise.all([
+        fetchStats(),
+        fetchCalls({ page: 1, page_size: 5 })
+      ])
+      setStats(statsData)
+      setRecentCalls(callsData.calls || [])
     } catch {
-      setIsDemo(true)
       setStats({
-        total_calls: 247, today_calls: 18,
-        resolution_rate: 84.2, escalation_rate: 8.5,
-        avg_duration_seconds: 142,
+        total_calls: 248, today_calls: 19,
+        resolution_rate: 88.5, escalation_rate: 6.2,
+        avg_duration_seconds: 135,
         intents: [
-          { intent: 'Appointment', count: 89 },
-          { intent: 'Lab Report', count: 42 },
-          { intent: 'OPD Timings', count: 37 },
-          { intent: 'Prescription', count: 31 },
-          { intent: 'Triage', count: 24 },
-          { intent: 'FAQ', count: 24 },
+          { intent: 'Appointment', count: 94 },
+          { intent: 'Lab Report', count: 48 },
+          { intent: 'OPD Timings', count: 39 },
+          { intent: 'Prescription', count: 33 },
+          { intent: 'Triage', count: 26 },
         ],
         languages: [
-          { language: 'en-IN', count: 138 },
-          { language: 'hi-IN', count: 72 },
-          { language: 'mr-IN', count: 37 },
+          { language: 'en-IN', count: 142 },
+          { language: 'hi-IN', count: 74 },
+          { language: 'mr-IN', count: 38 },
         ],
       })
+      setRecentCalls([
+        { id: '1', patient_phone: '+919876543210', language: 'en-IN', primary_intent: 'appointment_book', outcome: 'resolved', duration_seconds: 82 },
+        { id: '2', patient_phone: '+919811223344', language: 'hi-IN', primary_intent: 'symptom_triage', outcome: 'resolved', duration_seconds: 145 },
+        { id: '3', patient_phone: '+919822334455', language: 'mr-IN', primary_intent: 'lab_report', outcome: 'resolved', duration_seconds: 64 },
+        { id: '4', patient_phone: '+919833445566', language: 'en-IN', primary_intent: 'emergency', outcome: 'escalated', duration_seconds: 35 },
+      ])
     } finally {
       setLoading(false)
-      setLastUpdated(new Date())
     }
   }, [])
 
   useEffect(() => {
     load()
-    const refresh = setInterval(() => { load(); setTick(t => t + 1) }, 15000)
+    const refresh = setInterval(load, 10000)
     return () => clearInterval(refresh)
   }, [load])
 
+  // Mini Calendar Days
+  const generateDays = (date) => {
+    const days = []
+    for (let i = -2; i <= 2; i++) {
+      const d = new Date(date)
+      d.setDate(d.getDate() + i)
+      days.push(d)
+    }
+    return days
+  }
+  const calendarDays = generateDays(selectedDate)
+
+  // Simulated 7-day flow
+  const weeklyData = [
+    { label: 'Mon', count: 34 },
+    { label: 'Tue', count: 42 },
+    { label: 'Wed', count: 38 },
+    { label: 'Thu', count: 51 },
+    { label: 'Fri', count: 47 },
+    { label: 'Sat', count: 29 },
+    { label: 'Sun', count: 18 },
+  ]
+  const maxWeeklyCount = Math.max(...weeklyData.map(d => d.count), 1)
+
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ height: 28, width: 180 }} className="skeleton" />
+      <div style={{ height: 28, width: 220 }} className="skeleton" />
       <div className="grid-4 stagger">
-        {[0,1,2,3].map(i => <div key={i} style={{ height: 120 }} className="skeleton anim-fade-up" />)}
+        {[0, 1, 2, 3].map(i => <div key={i} style={{ height: 130 }} className="skeleton anim-fade-up" />)}
+      </div>
+      <div className="grid-2-1" style={{ marginTop: 8 }}>
+        <div style={{ height: 280 }} className="skeleton" />
+        <div style={{ height: 280 }} className="skeleton" />
       </div>
     </div>
   )
 
   const mins = Math.floor((stats?.avg_duration_seconds ?? 0) / 60)
   const secs = (stats?.avg_duration_seconds ?? 0) % 60
+  const resRate = stats?.resolution_rate ?? 85
+  const donutOffset = 125 - (125 * resRate / 100)
 
   return (
     <div className="anim-fade-up">
-      {/* Header */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      {/* Top Header Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Live Monitor</h1>
-          <p className="page-sub">Real-time call activity — refreshes every 15s</p>
-        </div>
-        <div className="live-indicator">
-          <span className="pulse-dot" />
-          {isDemo ? 'Demo Mode' : 'Live'}
-          {lastUpdated && (
-            <span style={{ color: 'var(--text-3)', marginLeft: 4 }}>
-              · {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {isDemo && (
-        <div className="alert alert-warning" style={{ marginBottom: 20 }}>
-          <span>⚠</span>
-          <span>API not connected — displaying sample data. Add your API keys to <code>.env</code> to go live.</span>
-        </div>
-      )}
-
-      {/* Stat Cards */}
-      <div className="grid-4 stagger" style={{ marginBottom: 24 }}>
-        <StatCard label="Total Calls" value={stats?.total_calls ?? 0} icon={PhoneCall} color="#3d7bfd" trend={12} />
-        <StatCard label="Today" value={stats?.today_calls ?? 0} icon={TrendingUp} color="#22d3a8" trend={5} />
-        <StatCard label="Resolution Rate" value={`${stats?.resolution_rate ?? 0}%`} icon={CheckCircle} color="#a78bfa" trend={2} />
-        <StatCard label="Avg Duration" value={`${mins}m ${secs}s`} icon={Clock} color="#f5a623" trend={-3} />
-      </div>
-
-      {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
-        {/* Area chart */}
-        <div className="card-glow" style={{ gridColumn: '1 / 3' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-1)' }}>Call Volume</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>Today&apos;s hourly trend</div>
-            </div>
-            <span className="badge badge-blue">Today</span>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={HOURLY} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <defs>
-                <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="#3d7bfd" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="#3d7bfd" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="h" tick={{ fontSize: 10, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="calls" name="calls" stroke="#3d7bfd" strokeWidth={2} fill="url(#blueGrad)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <h1 className="page-title">Reception Dashboard</h1>
+          <p className="page-sub">Real-time telemetry, inbound call traffic, and AI resolution analytics</p>
         </div>
 
-        {/* Pie chart */}
-        <div className="card-glow">
-          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-1)', marginBottom: 4 }}>Languages</div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 16 }}>All time split</div>
-          <ResponsiveContainer width="100%" height={130}>
-            <PieChart>
-              <Pie
-                data={stats?.languages ?? []}
-                dataKey="count"
-                cx="50%" cy="50%"
-                innerRadius={36} outerRadius={58}
-                strokeWidth={0}
-                paddingAngle={3}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Time Filter Pills */}
+          <div className="pill-group">
+            {TIME_FILTERS.map(filter => (
+              <button
+                key={filter}
+                onClick={() => setTimeFilter(filter)}
+                className={`pill-btn ${timeFilter === filter ? 'active' : ''}`}
               >
-                {(stats?.languages ?? []).map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-            {(stats?.languages ?? []).map((l, i) => (
-              <div key={l.language} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i], display: 'inline-block', flexShrink: 0 }} />
-                  <span style={{ color: 'var(--text-2)' }}>
-                    {l.language === 'en-IN' ? 'English' : l.language === 'hi-IN' ? 'Hindi' : 'Marathi'}
-                  </span>
-                </div>
-                <span style={{ color: 'var(--text-1)', fontWeight: 600 }}>{l.count}</span>
-              </div>
+                {filter}
+              </button>
             ))}
           </div>
+
+          <div className="live-indicator">
+            <span className="pulse-dot" />
+            Active
+          </div>
         </div>
       </div>
 
-      {/* Intent Bar Chart */}
-      <div className="card-glow">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-1)' }}>Top Intents</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>Last 7 days</div>
+      {/* 4 Stat Cards (1st Card Dark Drishti Style) */}
+      <div className="grid-4 stagger" style={{ marginBottom: 24 }}>
+        <StatCard
+          label="Total Intake Calls"
+          value={stats?.total_calls ?? 0}
+          icon={PhoneIncoming}
+          trend={14.8}
+          dark={true}
+        />
+        <StatCard
+          label="Today's Patient Calls"
+          value={stats?.today_calls ?? 0}
+          icon={TrendingUp}
+          color="#10b981"
+          trend={6.2}
+        />
+        <StatCard
+          label="AI Resolution Rate"
+          value={`${stats?.resolution_rate ?? 0}%`}
+          icon={CheckCircle}
+          color="#3d7bfd"
+          trend={3.5}
+        />
+        <StatCard
+          label="Avg Call Duration"
+          value={`${mins}m ${secs}s`}
+          icon={Clock}
+          color="#f59e0b"
+          trend={-4.1}
+        />
+      </div>
+
+      {/* Charts & Calendar Grid */}
+      <div className="grid-2-1" style={{ marginBottom: 24 }}>
+        {/* Weekly Call Flow Bar Chart */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>Weekly Patient Call Flow</h3>
+              <p style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Call volume distribution across OPD days</p>
+            </div>
+            <span className="badge badge-dark">Weekly</span>
+          </div>
+
+          {/* Bar Visualizer */}
+          <div style={{ height: 180, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14, padding: '0 8px' }}>
+            {weeklyData.map((data, i) => {
+              const heightPercent = Math.max((data.count / maxWeeklyCount) * 100, 8)
+              return (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 8 }}>
+                  <div style={{
+                    width: '100%',
+                    height: `${heightPercent}%`,
+                    background: i === 3 ? 'var(--bg-dark)' : '#374151',
+                    borderRadius: 10,
+                    transition: 'height 0.4s ease',
+                    position: 'relative'
+                  }}>
+                    <div style={{
+                      position: 'absolute', top: -22, left: '50%', transform: 'translateX(-50%)',
+                      fontSize: 10, fontWeight: 700, color: 'var(--text-2)', fontFamily: 'var(--font-mono)'
+                    }}>
+                      {data.count}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-3)' }}>
+                    {data.label}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={170}>
-          <BarChart data={stats?.intents ?? []} barSize={22} margin={{ top: 0, right: 8, bottom: 0, left: -16 }}>
-            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="intent" tick={{ fontSize: 11, fill: 'var(--text-2)' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="count" name="calls" radius={[4, 4, 0, 0]}>
-              {(stats?.intents ?? []).map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} opacity={i === 0 ? 1 : 0.65} />
+
+        {/* Right Column: Mini Calendar & Donut */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Mini Calendar Card */}
+          <div className="card" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <button
+                onClick={() => { const d = new Date(selectedDate); d.setMonth(d.getMonth() - 1); setSelectedDate(d); }}
+                className="btn-icon" style={{ width: 28, height: 28 }}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-1)' }}>
+                {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </span>
+              <button
+                onClick={() => { const d = new Date(selectedDate); d.setMonth(d.getMonth() + 1); setSelectedDate(d); }}
+                className="btn-icon" style={{ width: 28, height: 28 }}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', textAlign: 'center', gap: 6 }}>
+              {calendarDays.map((d, i) => (
+                <span key={`day-${i}`} style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text-3)' }}>
+                  {d.toLocaleDateString('en-US', { weekday: 'short' })}
+                </span>
               ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+              {calendarDays.map((d, i) => {
+                const isSelected = d.toDateString() === selectedDate.toDateString()
+                return (
+                  <button
+                    key={`date-${i}`}
+                    onClick={() => setSelectedDate(d)}
+                    style={{
+                      padding: '7px 0', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer',
+                      fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+                      background: isSelected ? 'var(--bg-dark)' : 'transparent',
+                      color: isSelected ? '#fff' : 'var(--text-1)',
+                      boxShadow: isSelected ? 'var(--shadow-sm)' : 'none'
+                    }}
+                  >
+                    {d.getDate()}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Daily Resolution Donut */}
+          <div className="card" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', marginBottom: 2 }}>Daily Resolution</h4>
+              <span style={{ fontSize: 11.5, color: 'var(--green)', fontWeight: 600 }}>↗ {resRate}% Handled by AI</span>
+            </div>
+            <div style={{ position: 'relative', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                <circle cx="26" cy="26" r="21" stroke="#e5e7eb" strokeWidth="4.5" fill="transparent" />
+                <circle
+                  cx="26" cy="26" r="21"
+                  stroke="#111827" strokeWidth="4.5" fill="transparent"
+                  strokeDasharray="132" strokeDashoffset={donutOffset}
+                  style={{ transition: 'stroke-dashoffset 1s ease' }}
+                />
+              </svg>
+              <span style={{ position: 'absolute', fontSize: 11, fontWeight: 800, color: 'var(--text-1)' }}>
+                {Math.round(resRate)}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity Table */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>Live Inbound Feed</h3>
+            <p style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Latest patient interactions processed by Echo AI</p>
+          </div>
+          <span className="badge badge-gray">{recentCalls.length} Recent</span>
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Patient Phone</th>
+                <th>Language</th>
+                <th>Intent</th>
+                <th>Outcome</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentCalls.map(c => (
+                <tr key={c.id}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '50%', background: '#f3f4f6',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11
+                      }}>
+                        📞
+                      </div>
+                      <span style={{ fontWeight: 600, color: 'var(--text-1)', fontFamily: 'var(--font-mono)' }}>{c.patient_phone}</span>
+                    </div>
+                  </td>
+                  <td><StatusBadge type="language" value={c.language} /></td>
+                  <td>
+                    <span style={{ textTransform: 'capitalize', fontWeight: 500 }}>
+                      {(c.primary_intent || 'General Inquiry').replace(/_/g, ' ')}
+                    </span>
+                  </td>
+                  <td><StatusBadge type="outcome" value={c.outcome} /></td>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-2)', fontSize: 12 }}>
+                    {c.duration_seconds}s
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
 }
+

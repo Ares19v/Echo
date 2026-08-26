@@ -159,17 +159,17 @@ export default function Simulator() {
   const isActive = callState === CALL_STATES.CONNECTED || callState === CALL_STATES.AGENT_JOINED
 
   return (
-    <div className="anim-fade-up" style={{ maxWidth: 860, margin: '0 auto' }}>
+    <div className="anim-fade-up" style={{ maxWidth: 960, margin: '0 auto' }}>
       {/* Header */}
-      <div className="page-header">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <h1 className="page-title">Call Simulator</h1>
-          <p className="page-sub">Talk to Echo AI directly from your browser — no phone needed</p>
+          <h1 className="page-title">Voice Call Simulator</h1>
+          <p className="page-sub">Interactive browser-to-agent consultation — English, Hindi & Marathi</p>
         </div>
         {isActive && (
           <div className="live-indicator">
             <span className="pulse-dot" />
-            {formatDuration(duration)}
+            <span>Duration: <strong style={{ color: 'var(--text-1)' }}>{formatDuration(duration)}</strong></span>
           </div>
         )}
       </div>
@@ -177,67 +177,69 @@ export default function Simulator() {
       {/* Info banner */}
       {callState === CALL_STATES.IDLE && (
         <div style={{
-          background: 'rgba(61,123,253,0.08)', border: '1px solid rgba(61,123,253,0.2)',
-          borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 24,
-          display: 'flex', alignItems: 'flex-start', gap: 12, fontSize: 13,
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 24,
+          display: 'flex', alignItems: 'center', gap: 14, boxShadow: 'var(--shadow-sm)'
         }}>
-          <Radio size={16} color="#3d7bfd" style={{ marginTop: 2, flexShrink: 0 }} />
-          <div style={{ color: 'var(--text-2)' }}>
-            <strong style={{ color: 'var(--text-1)' }}>How it works: </strong>
-            Click <em>Call Echo</em>, allow microphone access, then speak naturally.
-            Echo AI will pick up, introduce itself, and respond to your voice.
-            The agent worker must be running for Echo to join the room.
+          <div style={{
+            width: 38, height: 38, borderRadius: '50%', background: 'var(--bg-dark)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0
+          }}>
+            <Radio size={18} />
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.4 }}>
+            <strong style={{ color: 'var(--text-1)' }}>Real-Time WebRTC Simulation: </strong>
+            Click <strong style={{ color: 'var(--text-1)' }}>Call Echo</strong> below to connect. Speak in English, Hindi, or Marathi to test appointment booking, symptoms triage, and doctor availability.
           </div>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: 20 }}>
         {/* Left — Call controls */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Main call card */}
-          <div className="card-glow" style={{ textAlign: 'center', padding: 36 }}>
+          <div className="card" style={{ textAlign: 'center', padding: '36px 24px' }}>
             {/* Avatar / pulse ring */}
-            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
               {callState === CALL_STATES.AGENT_JOINED && (
                 <>
-                  <div style={{ position: 'absolute', width: 110, height: 110, borderRadius: '50%', background: 'rgba(34,211,168,0.08)', animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite' }} />
-                  <div style={{ position: 'absolute', width: 90, height: 90, borderRadius: '50%', background: 'rgba(34,211,168,0.12)', animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite 0.5s' }} />
+                  <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: '50%', background: 'rgba(34,211,168,0.12)', animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite' }} />
+                  <div style={{ position: 'absolute', width: 95, height: 95, borderRadius: '50%', background: 'rgba(34,211,168,0.2)', animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite 0.5s' }} />
                 </>
               )}
               <div style={{
-                width: 72, height: 72, borderRadius: '50%',
+                width: 76, height: 76, borderRadius: '50%',
                 background: callState === CALL_STATES.AGENT_JOINED
                   ? 'linear-gradient(135deg, #22d3a8, #3d7bfd)'
-                  : 'var(--surface-2)',
-                border: `2px solid ${callState === CALL_STATES.AGENT_JOINED ? 'rgba(34,211,168,0.4)' : 'var(--border)'}`,
+                  : 'var(--bg-dark)',
+                color: '#fff',
+                border: `3px solid ${callState === CALL_STATES.AGENT_JOINED ? '#22d3a8' : 'var(--border)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: callState === CALL_STATES.AGENT_JOINED ? '0 8px 30px rgba(34,211,168,0.4)' : 'var(--shadow-md)',
                 transition: 'all 0.4s ease', position: 'relative', zIndex: 1,
               }}>
-                <Radio size={28} color={callState === CALL_STATES.AGENT_JOINED ? '#fff' : 'var(--text-3)'} />
+                <Radio size={30} />
               </div>
             </div>
 
-            <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--text-1)', marginBottom: 6 }}>Echo AI</div>
-            <div style={{ fontSize: 13, color: STATE_LABELS[callState].color, marginBottom: 28 }}>
+            <div style={{ fontWeight: 800, fontSize: 19, color: 'var(--text-1)', marginBottom: 4 }}>Echo Receptionist</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: STATE_LABELS[callState].color, marginBottom: 24 }}>
               {STATE_LABELS[callState].text}
             </div>
 
-            {/* Primary call button */}
+            {/* Primary Call Button (Keeping User-Fav Cyan Blue) */}
             {!isActive ? (
               <button
                 id="call-echo-btn"
                 onClick={callState === CALL_STATES.CONNECTING ? undefined : startCall}
                 disabled={callState === CALL_STATES.CONNECTING}
+                className="btn-cyan-blue"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 10,
-                  padding: '14px 32px', borderRadius: 40,
-                  background: callState === CALL_STATES.ERROR
-                    ? 'linear-gradient(135deg, #f04747, #c0392b)'
-                    : 'linear-gradient(135deg, #22d3a8, #3d7bfd)',
-                  border: 'none', cursor: callState === CALL_STATES.CONNECTING ? 'wait' : 'pointer',
-                  color: '#fff', fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em',
-                  boxShadow: '0 4px 24px rgba(34,211,168,0.25)',
-                  transition: 'all 0.2s', opacity: callState === CALL_STATES.CONNECTING ? 0.7 : 1,
+                  padding: '14px 36px', borderRadius: 'var(--r-pill)',
+                  fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em',
+                  cursor: callState === CALL_STATES.CONNECTING ? 'wait' : 'pointer',
+                  opacity: callState === CALL_STATES.CONNECTING ? 0.75 : 1,
                 }}
               >
                 {callState === CALL_STATES.CONNECTING ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <Phone size={18} />}
@@ -251,13 +253,13 @@ export default function Simulator() {
                   onClick={toggleMute}
                   style={{
                     width: 48, height: 48, borderRadius: '50%',
-                    background: isMuted ? 'rgba(240,71,71,0.15)' : 'var(--surface-2)',
-                    border: `1px solid ${isMuted ? 'rgba(240,71,71,0.4)' : 'var(--border)'}`,
+                    background: isMuted ? 'var(--red-dim)' : '#f3f4f6',
+                    border: `1px solid ${isMuted ? 'var(--red)' : 'var(--border)'}`,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.2s', color: isMuted ? 'var(--red)' : 'var(--text-1)'
                   }}
                 >
-                  {isMuted ? <MicOff size={18} color="#f04747" /> : <Mic size={18} color="var(--text-2)" />}
+                  {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
                 </button>
                 {/* End call */}
                 <button
@@ -265,11 +267,11 @@ export default function Simulator() {
                   onClick={endCall}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '0 24px', height: 48, borderRadius: 40,
-                    background: 'linear-gradient(135deg, #f04747, #c0392b)',
+                    padding: '0 24px', height: 48, borderRadius: 'var(--r-pill)',
+                    background: 'var(--red)',
                     border: 'none', cursor: 'pointer',
                     color: '#fff', fontWeight: 700, fontSize: 14,
-                    boxShadow: '0 4px 16px rgba(240,71,71,0.3)', transition: 'all 0.2s',
+                    boxShadow: '0 4px 16px rgba(239,68,68,0.3)', transition: 'all 0.2s',
                   }}
                 >
                   <PhoneOff size={16} />
@@ -279,12 +281,12 @@ export default function Simulator() {
             )}
           </div>
 
-          {/* Error */}
+          {/* Error Banner */}
           {error && (
             <div style={{
-              background: 'rgba(240,71,71,0.08)', border: '1px solid rgba(240,71,71,0.2)',
+              background: 'var(--red-dim)', border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 'var(--r-md)', padding: '12px 16px',
-              display: 'flex', gap: 10, fontSize: 12, color: '#f04747', alignItems: 'flex-start',
+              display: 'flex', gap: 10, fontSize: 12, color: 'var(--red)', alignItems: 'flex-start',
             }}>
               <AlertCircle size={14} style={{ marginTop: 1, flexShrink: 0 }} />
               <span>{error}</span>
@@ -292,81 +294,86 @@ export default function Simulator() {
           )}
 
           {/* Agent status checklist */}
-          <div className="card-glow">
-            <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-1)', marginBottom: 14 }}>Requirements</div>
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-1)', marginBottom: 14 }}>Connection Checklist</div>
             {[
-              { label: 'Backend API running', ok: true },
-              { label: 'Agent worker running', ok: callState === CALL_STATES.AGENT_JOINED, pending: isActive && callState !== CALL_STATES.AGENT_JOINED },
-              { label: 'Microphone access granted', ok: isActive },
-              { label: 'LiveKit room joined', ok: isActive || callState === CALL_STATES.ENDED },
+              { label: 'FastAPI Backend Running (:8000)', ok: true },
+              { label: 'LiveKit Voice Worker Active', ok: callState === CALL_STATES.AGENT_JOINED, pending: isActive && callState !== CALL_STATES.AGENT_JOINED },
+              { label: 'Microphone Permission', ok: isActive },
+              { label: 'WebRTC Room Channel', ok: isActive || callState === CALL_STATES.ENDED },
             ].map(({ label, ok, pending }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: 12 }}>
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: 12.5 }}>
                 <div style={{
                   width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                  background: ok ? '#22d3a8' : pending ? '#f5a623' : 'var(--surface-3)',
-                  boxShadow: ok ? '0 0 6px rgba(34,211,168,0.5)' : 'none',
+                  background: ok ? 'var(--green)' : pending ? 'var(--amber)' : '#d1d5db',
+                  boxShadow: ok ? '0 0 6px rgba(16,185,129,0.5)' : 'none',
                 }} />
-                <span style={{ color: ok ? 'var(--text-2)' : 'var(--text-3)' }}>{label}</span>
+                <span style={{ color: ok ? 'var(--text-1)' : 'var(--text-3)', fontWeight: ok ? 600 : 400 }}>{label}</span>
               </div>
             ))}
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--text-3)' }}>
-              Start the agent worker with:<br />
-              <code style={{ color: 'var(--text-2)', fontFamily: 'monospace' }}>python -m agent.worker</code>
-            </div>
           </div>
         </div>
 
         {/* Right — Live Transcript */}
-        <div className="card-glow" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <MessageSquare size={15} color="var(--text-3)" />
-            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-1)' }}>Live Transcript</span>
-            {isActive && <span className="pulse-dot" style={{ marginLeft: 'auto' }} />}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+            <MessageSquare size={16} color="var(--text-2)" />
+            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-1)' }}>Real-Time Voice Transcript</span>
+            {isActive && (
+              <span className="badge badge-green" style={{ marginLeft: 'auto' }}>
+                Live Stream
+              </span>
+            )}
           </div>
 
           <div style={{
-            flex: 1, minHeight: 340, maxHeight: 420, overflowY: 'auto',
-            display: 'flex', flexDirection: 'column', gap: 10,
+            flex: 1, minHeight: 360, maxHeight: 440, overflowY: 'auto',
+            display: 'flex', flexDirection: 'column', gap: 12,
             paddingRight: 4,
           }}>
             {transcript.length === 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-3)', fontSize: 13, gap: 8, paddingTop: 40 }}>
-                <MessageSquare size={28} strokeWidth={1.2} />
-                <span>Transcript will appear here during the call</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-3)', fontSize: 13, gap: 8, paddingTop: 60 }}>
+                <MessageSquare size={32} strokeWidth={1.2} />
+                <span>Transcript will appear here in real-time as you speak</span>
               </div>
             )}
             {transcript.map((msg, i) => (
               <div key={i} style={{
                 display: 'flex',
                 flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-                alignItems: 'flex-end', gap: 8,
+                alignItems: 'flex-end', gap: 10,
               }}>
                 {msg.role === 'system' ? (
                   <div style={{
                     width: '100%', textAlign: 'center', fontSize: 11,
-                    color: 'var(--text-3)', padding: '4px 0',
+                    color: 'var(--text-3)', padding: '4px 0', fontFamily: 'var(--font-mono)'
                   }}>
                     — {msg.text} —
                   </div>
                 ) : (
                   <>
                     <div style={{
-                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                      background: msg.role === 'user' ? 'rgba(61,123,253,0.2)' : 'rgba(34,211,168,0.2)',
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      background: msg.role === 'user' ? 'var(--bg-dark)' : 'var(--blue-dim)',
+                      color: msg.role === 'user' ? '#fff' : 'var(--blue)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, fontWeight: 700, color: msg.role === 'user' ? '#3d7bfd' : '#22d3a8',
+                      fontSize: 10, fontWeight: 800,
                     }}>
                       {msg.role === 'user' ? 'YOU' : 'AI'}
                     </div>
                     <div style={{
-                      maxWidth: '76%',
-                      background: msg.role === 'user' ? 'rgba(61,123,253,0.1)' : 'var(--surface-2)',
-                      border: `1px solid ${msg.role === 'user' ? 'rgba(61,123,253,0.2)' : 'var(--border)'}`,
-                      borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                      padding: '9px 13px', fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5,
+                      maxWidth: '78%',
+                      background: msg.role === 'user' ? 'var(--bg-dark)' : '#f9fafb',
+                      color: msg.role === 'user' ? '#fff' : 'var(--text-1)',
+                      border: `1px solid ${msg.role === 'user' ? 'var(--bg-dark)' : 'var(--border)'}`,
+                      borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      padding: '11px 15px', fontSize: 13, lineHeight: 1.5,
+                      boxShadow: 'var(--shadow-sm)'
                     }}>
                       {msg.text}
-                      <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4 }}>{msg.ts}</div>
+                      <div style={{ fontSize: 10, color: msg.role === 'user' ? '#9ca3af' : 'var(--text-3)', marginTop: 4, textAlign: 'right' }}>
+                        {msg.ts}
+                      </div>
                     </div>
                   </>
                 )}
@@ -377,10 +384,9 @@ export default function Simulator() {
         </div>
       </div>
 
-      {/* Ping animation keyframe */}
       <style>{`
         @keyframes ping {
-          75%, 100% { transform: scale(1.5); opacity: 0; }
+          75%, 100% { transform: scale(1.4); opacity: 0; }
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
@@ -389,3 +395,4 @@ export default function Simulator() {
     </div>
   )
 }
+

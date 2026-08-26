@@ -86,9 +86,10 @@ class Settings(BaseSettings):
     SARVAM_TTS_SPEED: float = 0.92          # slightly slower for medical context
     SARVAM_DEFAULT_VOICE: str = "vidya"     # warm, professional Indian female voice
 
-    # ─── Gemini (LLM) ───────────────────────────────────────────────────────
+    # ─── LLM (Groq / Gemini) ────────────────────────────────────────────────
     GROQ_API_KEY: str | None = None
-    GROQ_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     GEMINI_TEMPERATURE: float = 0.3         # low temp for consistent clinical replies
     GEMINI_MAX_TOKENS: int = 512
 

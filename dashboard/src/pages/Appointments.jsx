@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Calendar, MessageSquare, CheckCircle } from 'lucide-react'
+import { Calendar, MessageSquare, CheckCircle, Clock, User, Phone, Stethoscope, ChevronRight } from 'lucide-react'
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState([])
@@ -8,10 +8,11 @@ export default function Appointments() {
 
   const fetchData = async () => {
     try {
-      const headers = { 'X-Admin-Key': import.meta.env.VITE_ADMIN_KEY }
+      const headers = { 'X-Admin-Key': import.meta.env.VITE_ADMIN_KEY || 'demo-admin-key-2024' }
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const [apptsRes, smsRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/appointments/`, { headers }),
-        fetch(`${import.meta.env.VITE_API_URL}/appointments/sms-log`, { headers })
+        fetch(`${apiUrl}/appointments/`, { headers }),
+        fetch(`${apiUrl}/appointments/sms-log`, { headers })
       ])
       
       if (apptsRes.ok) setAppointments(await apptsRes.json())
@@ -25,45 +26,125 @@ export default function Appointments() {
 
   useEffect(() => {
     fetchData()
-    const interval = setInterval(fetchData, 3000) // auto refresh for demo
+    const interval = setInterval(fetchData, 4000)
     return () => clearInterval(interval)
   }, [])
 
-  if (loading) return <div className="p-8 text-center text-gray-400">Loading demo data...</div>
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ height: 28, width: 220 }} className="skeleton" />
+        <div className="grid-2 stagger">
+          <div style={{ height: 350 }} className="skeleton anim-fade-up" />
+          <div style={{ height: 350 }} className="skeleton anim-fade-up" />
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Appointments & SMS Demo</h1>
-        <p className="text-gray-400">Real-time view of bookings and simulated SMS messages from the AI agent.</p>
+    <div className="anim-fade-up">
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h1 className="page-title">Appointments & SMS Log</h1>
+          <p className="page-sub">Confirmed clinic bookings and automated SMS dispatch feed</p>
+        </div>
+        <div className="live-indicator">
+          <span className="pulse-dot" />
+          Live Sync (4s)
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Appointments Table */}
-        <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden shadow-xl backdrop-blur-sm">
-          <div className="p-4 border-b border-gray-700/50 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-lg font-semibold text-white">Latest Bookings</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 20 }}>
+        {/* Appointments Column */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--bg-card)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 'var(--r-sm)',
+                background: 'var(--blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Calendar size={18} color="var(--blue)" />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text-1)' }}>Latest Bookings</h2>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{appointments.length} confirmed appointments</div>
+              </div>
+            </div>
+            <span className="badge badge-dark">{appointments.length} Booked</span>
           </div>
-          <div className="divide-y divide-gray-700/50 max-h-[600px] overflow-y-auto">
+
+          <div style={{ maxHeight: 560, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {appointments.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">No appointments booked yet. Call the agent to test.</div>
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>
+                <Clock size={32} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
+                <p style={{ fontSize: 13, fontWeight: 600 }}>No appointments booked yet.</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Call Echo on the Simulator to create one.</p>
+              </div>
             ) : (
               appointments.map(a => (
-                <div key={a.id} className="p-4 hover:bg-gray-700/20 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="font-medium text-white">{a.patient_name}</div>
-                      <div className="text-sm text-gray-400">{a.patient_phone}</div>
+                <div
+                  key={a.id}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--r-lg)',
+                    padding: '16px',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-dark)',
+                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        <User size={15} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--text-1)' }}>{a.patient_name}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Phone size={11} /> {a.patient_phone}
+                        </div>
+                      </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      <CheckCircle className="w-3 h-3" />
-                      {a.status}
+                    <span className="badge badge-green">
+                      <CheckCircle size={11} />
+                      {a.status || 'Confirmed'}
                     </span>
                   </div>
-                  <div className="bg-gray-900/50 rounded p-3 text-sm text-gray-300">
-                    <span className="text-indigo-400 font-medium">{a.doctor_name}</span> ({a.department})<br/>
-                    <span className="text-emerald-400">{a.appointment_date} at {a.appointment_time}</span>
+
+                  <div style={{
+                    background: '#ffffff',
+                    borderRadius: 'var(--r-md)',
+                    padding: '12px 14px',
+                    border: '1px solid var(--border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5 }}>
+                      <Stethoscope size={14} color="var(--blue)" />
+                      <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>{a.doctor_name}</span>
+                      <span style={{ color: 'var(--text-3)', fontSize: 11.5 }}>({a.department})</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--green)', marginLeft: 21, fontWeight: 600 }}>
+                      <Clock size={13} />
+                      <span>{a.appointment_date} at {a.appointment_time}</span>
+                    </div>
+                    {a.reason && (
+                      <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginLeft: 21 }}>
+                        Reason: {a.reason}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -71,29 +152,79 @@ export default function Appointments() {
           </div>
         </div>
 
-        {/* SMS Log */}
-        <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden shadow-xl backdrop-blur-sm">
-          <div className="p-4 border-b border-gray-700/50 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-lg font-semibold text-white">Outbound SMS (Demo)</h2>
+        {/* Outbound SMS Column */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--bg-card)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 'var(--r-sm)',
+                background: 'var(--green-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <MessageSquare size={18} color="var(--green)" />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text-1)' }}>Outbound SMS (Demo)</h2>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Automated patient notifications</div>
+              </div>
+            </div>
+            <span className="badge badge-green">{smsLogs.length} Sent</span>
           </div>
-          <div className="divide-y divide-gray-700/50 max-h-[600px] overflow-y-auto bg-gray-900/30">
+
+          <div style={{ maxHeight: 560, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {smsLogs.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">No SMS sent yet.</div>
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>
+                <MessageSquare size={32} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
+                <p style={{ fontSize: 13, fontWeight: 600 }}>No SMS notifications logged yet.</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Booking an appointment triggers SMS dispatch.</p>
+              </div>
             ) : (
               smsLogs.map(sms => (
-                <div key={sms.id} className="p-4 flex gap-4">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <MessageSquare className="w-4 h-4 text-emerald-400" />
-                    </div>
+                <div
+                  key={sms.id}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--r-lg)',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    gap: 12,
+                    alignItems: 'flex-start',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', background: 'var(--green-dim)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2
+                  }}>
+                    <MessageSquare size={15} color="var(--green)" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400">To: {sms.recipient_phone}</span>
-                      <span className="text-gray-500">{new Date(sms.sent_at).toLocaleTimeString()}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
+                        To: {sms.recipient_phone}
+                      </span>
+                      <span style={{ fontSize: 10.5, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                        {new Date(sms.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </span>
                     </div>
-                    <div className="bg-gray-800 rounded-lg p-3 text-sm text-gray-200 border border-gray-700 whitespace-pre-wrap font-mono">
+                    <div style={{
+                      background: '#ffffff',
+                      borderRadius: 'var(--r-md)',
+                      padding: '12px 14px',
+                      fontSize: 12,
+                      color: 'var(--text-1)',
+                      border: '1px solid var(--border)',
+                      fontFamily: 'var(--font-mono)',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.5
+                    }}>
                       {sms.message_body}
                     </div>
                   </div>
@@ -106,3 +237,4 @@ export default function Appointments() {
     </div>
   )
 }
+

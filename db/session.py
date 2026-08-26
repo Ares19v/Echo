@@ -4,8 +4,13 @@ Echo – Async SQLAlchemy database session factory.
 
 from __future__ import annotations
 
+import asyncio
+import sys
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -18,13 +23,18 @@ from config.settings import get_settings
 
 settings = get_settings()
 
+is_sqlite = "sqlite" in settings.DATABASE_URL
+engine_kwargs: dict = {"echo": settings.DEBUG, "future": True}
+if is_sqlite:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    engine_kwargs["pool_size"] = settings.DATABASE_POOL_SIZE
+    engine_kwargs["max_overflow"] = settings.DATABASE_MAX_OVERFLOW
+    engine_kwargs["connect_args"] = {"connect_timeout": 5}
+
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    echo=settings.DEBUG,
-    future=True,
-    connect_args={"connect_timeout": 5},  # fail fast if DB is not available
+    **engine_kwargs,
 )
 
 AsyncSessionLocal = async_sessionmaker(

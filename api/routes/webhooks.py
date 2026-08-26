@@ -66,6 +66,7 @@ async def _spawn_agent_for_call(call_sid: str, caller: str, called: str) -> None
 
 
 @router.post("/inbound")
+@router.post("/inbound-call")
 async def inbound_call(
     request: Request,
     background_tasks: BackgroundTasks,

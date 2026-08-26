@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ExternalLink, Zap } from 'lucide-react'
+import { ExternalLink, Zap, AlertTriangle, Phone, CheckCircle, ShieldAlert } from 'lucide-react'
 import StatusBadge from '../components/StatusBadge'
 import { fetchEscalations } from '../api/client'
 import { formatDistanceToNow } from 'date-fns'
 
 const REASON_META = {
-  emergency:         { label: 'Emergency', cls: 'badge-red',    icon: '🚨' },
-  patient_requested: { label: 'Patient Request', cls: 'badge-amber', icon: '👤' },
-  max_clarifications:{ label: 'Max Retries', cls: 'badge-gray', icon: '🔄' },
-  technical_failure: { label: 'Technical', cls: 'badge-gray',   icon: '⚙️' },
-  mental_health:     { label: 'Mental Health', cls: 'badge-purple', icon: '🧠' },
+  emergency:         { label: 'Medical Emergency (108)', cls: 'badge-red',    icon: '🚨' },
+  patient_requested: { label: 'Human Front-Desk Request', cls: 'badge-amber', icon: '👤' },
+  max_clarifications:{ label: 'Max Retries Reached', cls: 'badge-gray', icon: '🔄' },
+  technical_failure: { label: 'Audio Bridge Issue', cls: 'badge-gray',   icon: '⚙️' },
+  mental_health:     { label: 'Mental Health Advisory', cls: 'badge-purple', icon: '🧠' },
 }
 
 const DEMO = [
@@ -29,24 +29,28 @@ export default function EscalationQueue() {
     const load = async () => {
       try {
         const data = await fetchEscalations()
-        setCalls(data.calls); setTotal(data.total)
+        setCalls(data.calls || [])
+        setTotal(data.total || 0)
       } catch {
-        setCalls(DEMO); setTotal(DEMO.length)
-      } finally { setLoading(false) }
+        setCalls(DEMO)
+        setTotal(DEMO.length)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])
 
   return (
     <div className="anim-fade-up">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h1 className="page-title">Escalation Queue</h1>
-          <p className="page-sub">{total} calls transferred to human staff</p>
+          <p className="page-sub">{total} high-priority calls transferred to clinic medical staff</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Zap size={13} color="var(--red)" />
-          <span style={{ fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{total} requiring attention</span>
+        <div className="badge badge-red" style={{ padding: '6px 14px', fontSize: 12 }}>
+          <ShieldAlert size={14} />
+          {total} Requiring Human Review
         </div>
       </div>
 
@@ -55,57 +59,60 @@ export default function EscalationQueue() {
           <table>
             <thead>
               <tr>
-                <th>Phone</th>
-                <th>Lang</th>
-                <th>Escalation Reason</th>
+                <th>Patient Phone</th>
+                <th>Language</th>
+                <th>Escalation Trigger</th>
                 <th>Duration</th>
                 <th>Turns</th>
-                <th>When</th>
-                <th style={{ width: 40 }}></th>
+                <th>Transferred At</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                Array.from({ length: 3 }, (_, i) => (
-                  <tr key={i}>
-                    {Array.from({ length: 7 }, (_, j) => (
-                      <td key={j}><div className="skeleton" style={{ height: 14, width: '75%' }} /></td>
-                    ))}
-                  </tr>
-                ))
-              ) : calls.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-3)' }}>
-                    No escalations — great news!
-                  </td>
-                </tr>
-              ) : calls.map((call, idx) => {
-                const rm = REASON_META[call.escalation_reason] || { label: call.escalation_reason, cls: 'badge-gray', icon: '?' }
+              {calls.map(c => {
+                const meta = REASON_META[c.escalation_reason] || { label: c.escalation_reason || 'Manual Transfer', cls: 'badge-gray', icon: '⚡' }
                 return (
                   <tr
-                    key={call.id}
-                    className="clickable anim-fade-up"
-                    style={{ animationDelay: `${idx * 40}ms` }}
-                    onClick={() => navigate(`/calls/${call.id}`)}
+                    key={c.id}
+                    className="clickable"
+                    onClick={() => navigate(`/calls/${c.id}`)}
                   >
-                    <td><span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{call.patient_phone}</span></td>
-                    <td><StatusBadge type="language" value={call.language} /></td>
                     <td>
-                      <span className={`badge ${rm.cls}`}>
-                        <span>{rm.icon}</span>
-                        {rm.label}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%', background: 'var(--red-dim)',
+                          color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          <AlertTriangle size={15} />
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-1)' }}>
+                          {c.patient_phone}
+                        </span>
+                      </div>
+                    </td>
+                    <td><StatusBadge type="language" value={c.language} /></td>
+                    <td>
+                      <span className={`badge ${meta.cls}`} style={{ gap: 6 }}>
+                        <span>{meta.icon}</span>
+                        {meta.label}
                       </span>
                     </td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>
-                      {call.duration_seconds ? `${Math.floor(call.duration_seconds / 60)}m ${call.duration_seconds % 60}s` : '—'}
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-2)' }}>
+                      {c.duration_seconds}s
                     </td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{call.turn_count}</td>
-                    <td style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                      {call.started_at ? formatDistanceToNow(new Date(call.started_at), { addSuffix: true }) : '—'}
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-2)' }}>
+                      {c.turn_count}
+                    </td>
+                    <td style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                      {c.started_at ? formatDistanceToNow(new Date(c.started_at), { addSuffix: true }) : '—'}
                     </td>
                     <td>
-                      <button className="btn btn-ghost btn-icon" onClick={e => { e.stopPropagation(); navigate(`/calls/${call.id}`) }}>
-                        <ExternalLink size={12} />
+                      <button
+                        onClick={e => { e.stopPropagation(); navigate(`/calls/${c.id}`) }}
+                        className="btn btn-ghost"
+                        style={{ padding: '4px 10px', fontSize: 11.5 }}
+                      >
+                        Review <ExternalLink size={11} />
                       </button>
                     </td>
                   </tr>
