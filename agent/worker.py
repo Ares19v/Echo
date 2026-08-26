@@ -99,7 +99,7 @@ async def entrypoint(ctx: JobContext) -> None:
     started_at = datetime.now(UTC)
 
     session = AgentSession(
-        vad=silero.VAD.load(),
+        vad=silero.VAD.load(min_speech_duration=0.05, min_silence_duration=0.5),
         stt=SarvamSTT(
             api_key=settings.SARVAM_API_KEY,
             model=settings.SARVAM_STT_MODEL,
@@ -118,6 +118,7 @@ async def entrypoint(ctx: JobContext) -> None:
             speed=settings.SARVAM_TTS_SPEED,
         ),
     )
+
 
     await session.start(EchoAgent(), room=ctx.room)
     logger.info("Echo session started — room: %s", ctx.room.name)

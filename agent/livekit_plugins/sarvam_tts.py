@@ -1,6 +1,6 @@
 """
 Echo – Sarvam TTS plugin for LiveKit Agents 1.5.8.
-Wraps Sarvam's Bulbul v2 TTS into the livekit-agents TTS interface.
+Wraps Sarvam's Bulbul v2 TTS into the livekit-agents TTS interface with connection pooling and LRU audio caching.
 """
 from __future__ import annotations
 
@@ -21,12 +21,29 @@ _SARVAM_TTS_URL = "https://api.sarvam.ai/text-to-speech"
 _SAMPLE_RATE = 22050  # Sarvam returns 22050 Hz
 _NUM_CHANNELS = 1
 
+# In-memory audio cache for frequent phrases (greetings, standard disclaimers, etc.)
+_AUDIO_CACHE: dict[str, bytes] = {}
+_MAX_CACHE_SIZE = 256
+
+# Shared HTTP client with connection pooling and keep-alive
+_HTTP_CLIENT: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    global _HTTP_CLIENT
+    if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
+        _HTTP_CLIENT = httpx.AsyncClient(
+            timeout=12.0,
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50, keepalive_expiry=60.0),
+        )
+    return _HTTP_CLIENT
+
 
 @dataclass
 class SarvamTTSOptions:
     api_key: str
     model: str = "bulbul:v2"
-    voice: str = "vidya"  # must be compatible with model (bulbul:v2 voices: vidya, abhilash, manisha, arya, karun, hitesh)
+    voice: str = "vidya"  # compatible voices: vidya, abhilash, manisha, arya, karun, hitesh
     language_code: str = "en-IN"
     speed: float = 0.92
 
@@ -43,7 +60,6 @@ class SarvamChunkedStream(ChunkedStream):
         opts = self._tts_ref._opts
 
         # MUST call initialize() before any push() — required by livekit-agents 1.5.8
-        # stream=False (default) auto-starts a segment; do NOT call start_segment() here
         output_emitter.initialize(
             request_id=request_id,
             sample_rate=_SAMPLE_RATE,
@@ -51,28 +67,39 @@ class SarvamChunkedStream(ChunkedStream):
             mime_type="audio/pcm",
         )
 
+        cache_key = f"{opts.model}:{opts.voice}:{opts.language_code}:{opts.speed}:{self._input_text.strip()}"
+        if cache_key in _AUDIO_CACHE:
+            pcm_bytes = _AUDIO_CACHE[cache_key]
+            output_emitter.push(pcm_bytes)
+            logger.debug("Sarvam TTS (Cache Hit): %r -> %d bytes PCM", self._input_text[:50], len(pcm_bytes))
+            return
+
         try:
-            async with httpx.AsyncClient(timeout=12.0) as client:
-                resp = await client.post(
-                    _SARVAM_TTS_URL,
-                    headers={
-                        "api-subscription-key": opts.api_key,
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "inputs": [self._input_text],
-                        "target_language_code": opts.language_code,
-                        "speaker": opts.voice,
-                        "model": opts.model,
-                        "speech_sample_rate": _SAMPLE_RATE,
-                        "enable_preprocessing": True,
-                        "pace": opts.speed,
-                    },
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                audio_b64 = data["audios"][0]
-                pcm_bytes = self._wav_b64_to_pcm(audio_b64)
+            client = _get_http_client()
+            resp = await client.post(
+                _SARVAM_TTS_URL,
+                headers={
+                    "api-subscription-key": opts.api_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "inputs": [self._input_text],
+                    "target_language_code": opts.language_code,
+                    "speaker": opts.voice,
+                    "model": opts.model,
+                    "speech_sample_rate": _SAMPLE_RATE,
+                    "enable_preprocessing": True,
+                    "pace": opts.speed,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            audio_b64 = data["audios"][0]
+            pcm_bytes = self._wav_b64_to_pcm(audio_b64)
+
+            # Store in cache if small text
+            if len(_AUDIO_CACHE) < _MAX_CACHE_SIZE and len(self._input_text) < 200:
+                _AUDIO_CACHE[cache_key] = pcm_bytes
 
             output_emitter.push(pcm_bytes)
             logger.debug("Sarvam TTS: %r -> %d bytes PCM", self._input_text[:60], len(pcm_bytes))
@@ -82,7 +109,6 @@ class SarvamChunkedStream(ChunkedStream):
             # Push 0.5s of silence so the pipeline does not stall
             silence = bytes(int(_SAMPLE_RATE * 0.5) * _NUM_CHANNELS * 2)
             output_emitter.push(silence)
-
 
     @staticmethod
     def _wav_b64_to_pcm(b64: str) -> bytes:
@@ -135,3 +161,4 @@ class SarvamTTS(tts.TTS):
 
     async def aclose(self) -> None:
         pass
+
