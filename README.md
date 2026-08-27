@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/DPDP-Compliant-green?style=flat-square" />
 </p>
 
-> **Echo** is a production-grade, inbound AI voice agent for Indian healthcare clinics. It handles patient calls end-to-end — appointment booking, lab report status, symptom triage, and more — in English, Hindi, and Marathi with native code-switching support.
+> **Echo** is a high-performance, inbound AI voice agent for Indian healthcare clinics. It handles patient calls end-to-end — appointment booking, lab report status, symptom triage, and more — in English, Hindi, and Marathi with native code-switching support.
 
 ---
 
