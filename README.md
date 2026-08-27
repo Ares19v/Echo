@@ -1,3 +1,5 @@
+[![CI](https://github.com/Ares19v/Echo/actions/workflows/ci.yml/badge.svg)](https://github.com/Ares19v/Echo/actions/workflows/ci.yml)
+
 # Echo – AI Healthcare Voice Agent
 
 <p align="center">
