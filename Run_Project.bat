@@ -1,75 +1,74 @@
 @echo off
 title Echo – AI Voice Agent
 color 0B
-setlocal
+setlocal enabledelayedexpansion
+
+:: ── Ensure script runs from its own directory ──────────────────────────────
+cd /d "%~dp0"
 
 echo.
-echo  ╔══════════════════════════════════════════╗
-echo  ║         Echo – AI Voice Agent            ║
-echo  ║              STARTING...                 ║
-echo  ╚══════════════════════════════════════════╝
+echo  ======================================================
+echo              Echo - AI Healthcare Voice Agent
+echo  ======================================================
 echo.
 
-:: ── Activate Python venv ──────────────────────────────────────────────────
-:: Virtual environment check bypassed (using system Python if venv absent)
-if exist .venv\Scripts\activate.bat call .venv\Scripts\activate.bat
-
-:: ── Validate .env ─────────────────────────────────────────────────────────
-if not exist .env (
-    echo  ⚠  No .env file found. Copying from .env.example...
-    copy .env.example .env >nul
-)
-
-:: ── Start Docker services (DB + Redis) ────────────────────────────────────
-echo [1/4] Starting database services...
-docker compose up -d postgres redis >nul 2>&1
+:: ── Check Prerequisites ──────────────────────────────────────────────────
+where python >nul 2>&1
 if %errorlevel% neq 0 (
-    echo  ⚠  Docker not available – skipping DB start (demo mode only)
-) else (
-    echo  ✓ PostgreSQL + Redis running
-    :: Wait for postgres to be ready
-    timeout /t 3 /nobreak >nul
+    echo [ERROR] Python is not installed or not in PATH.
+    echo Please install Python 3.11+ and try again.
+    pause
+    exit /b 1
 )
 
-:: ── Start FastAPI backend ─────────────────────────────────────────────────
-echo [2/4] Starting Echo API backend (port 8000)...
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js is not installed or not in PATH.
+    echo Please install Node.js 18+ and try again.
+    pause
+    exit /b 1
+)
+
+:: ── Environment & Virtualenv ──────────────────────────────────────────────
+if not exist .env (
+    echo [INFO] No .env file found. Creating .env from .env.example...
+    copy .env.example .env >nul
+    echo [INFO] Created .env file.
+)
+
+:: ── Clean up stale ports (8000 for backend, 5173 for Vite) ─────────────────
+echo [1/3] Checking and freeing ports...
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000 " ^| findstr "LISTENING"') do (
     taskkill /F /PID %%p >nul 2>&1
 )
-start "Echo Backend" cmd /k "if exist .venv\Scripts\activate.bat call .venv\Scripts\activate.bat && python run_backend.py"
-timeout /t 3 /nobreak >nul
-echo  ✓ API backend started
-
-:: ── Start agent worker ────────────────────────────────────────────────────
-echo [3/4] Starting Echo agent worker...
-:: Kill any stale process holding port 8081 from a previous run
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8081 " ^| findstr "LISTENING"') do (
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5173 " ^| findstr "LISTENING"') do (
     taskkill /F /PID %%p >nul 2>&1
 )
-timeout /t 1 /nobreak >nul
-start "Echo Agent Worker" cmd /k "if exist .venv\Scripts\activate.bat call .venv\Scripts\activate.bat && python -m agent.worker dev"
-timeout /t 3 /nobreak >nul
-echo  ✓ Agent worker started
 
-:: ── Start React dashboard ─────────────────────────────────────────────────
-echo [4/4] Starting admin dashboard (port 5173)...
-start "Echo Dashboard" cmd /k "cd dashboard && npm run dev"
-timeout /t 4 /nobreak >nul
-echo  ✓ Dashboard started
+:: ── 1. Start FastAPI Backend ───────────────────────────────────────────────
+echo [2/3] Starting Echo FastAPI Backend (Port 8000)...
+start "Echo API Backend" cmd /k "cd /d ""%~dp0"" && if exist .venv\Scripts\activate.bat (call .venv\Scripts\activate.bat) && python run_backend.py"
 
-:: ── Open in browser ───────────────────────────────────────────────────────
+:: ── 2. Start LiveKit Voice Agent Worker ───────────────────────────────────
+echo [2/3] Starting Echo LiveKit Voice Agent Worker...
+start "Echo Agent Worker" cmd /k "cd /d ""%~dp0"" && if exist .venv\Scripts\activate.bat (call .venv\Scripts\activate.bat) && python -m agent.worker dev"
+
+:: ── 3. Start React Dashboard ──────────────────────────────────────────────
+echo [3/3] Starting Echo React Dashboard (Port 5173)...
+start "Echo Dashboard" cmd /k "cd /d ""%~dp0\dashboard"" && npm run dev"
+
 echo.
-echo  ══════════════════════════════════════════════
-echo   Echo is running!
+echo  ======================================================
+echo   Echo services are launching in separate windows:
 echo.
-echo   Dashboard:    http://localhost:5173  (or :5174)
-echo   Simulator:    http://localhost:5173/simulator
-echo   API Docs:     http://localhost:8000/docs
-echo   API Health:   http://localhost:8000/health
-echo   Agent Worker: http://localhost:8081 (internal)
+echo   - Admin Dashboard:  http://localhost:5173
+echo   - Voice Simulator:  http://localhost:5173/simulator
+echo   - API Backend:      http://localhost:8000/docs
+echo   - API Health:       http://localhost:8000/health
 echo.
-echo   Open the Simulator page to talk to Echo AI!
-echo  ══════════════════════════════════════════════
+echo   Press any key to open the Voice Simulator in browser...
+echo   (or close this window to keep services running)
+echo  ======================================================
 echo.
 pause >nul
 start "" http://localhost:5173/simulator
