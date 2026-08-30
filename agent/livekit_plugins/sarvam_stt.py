@@ -21,20 +21,6 @@ logger = logging.getLogger(__name__)
 
 _SARVAM_STT_URL = "https://api.sarvam.ai/speech-to-text"
 
-# Shared HTTP client with connection pooling and keep-alive
-_HTTP_CLIENT: httpx.AsyncClient | None = None
-
-
-def _get_http_client() -> httpx.AsyncClient:
-    global _HTTP_CLIENT
-    if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
-        _HTTP_CLIENT = httpx.AsyncClient(
-            timeout=10.0,
-            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50, keepalive_expiry=60.0),
-        )
-    return _HTTP_CLIENT
-
-
 class SarvamSTT(stt.STT):
     """LiveKit-compatible Sarvam STT plugin using Saarika v2.5."""
 
@@ -65,15 +51,15 @@ class SarvamSTT(stt.STT):
         request_id = str(uuid.uuid4())
 
         try:
-            client = _get_http_client()
-            resp = await client.post(
-                _SARVAM_STT_URL,
-                headers={"api-subscription-key": self._api_key},
-                data={"model": self._model, "language_code": lang},
-                files={"file": ("audio.wav", wav_bytes, "audio/wav")},
-            )
-            resp.raise_for_status()
-            data = resp.json()
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    _SARVAM_STT_URL,
+                    headers={"api-subscription-key": self._api_key},
+                    data={"model": self._model, "language_code": lang},
+                    files={"file": ("audio.wav", wav_bytes, "audio/wav")},
+                )
+                resp.raise_for_status()
+                data = resp.json()
 
             transcript = data.get("transcript", "")
             confidence = data.get("confidence", 0.85)

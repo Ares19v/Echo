@@ -25,25 +25,12 @@ _NUM_CHANNELS = 1
 _AUDIO_CACHE: dict[str, bytes] = {}
 _MAX_CACHE_SIZE = 256
 
-# Shared HTTP client with connection pooling and keep-alive
-_HTTP_CLIENT: httpx.AsyncClient | None = None
-
-
-def _get_http_client() -> httpx.AsyncClient:
-    global _HTTP_CLIENT
-    if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
-        _HTTP_CLIENT = httpx.AsyncClient(
-            timeout=12.0,
-            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50, keepalive_expiry=60.0),
-        )
-    return _HTTP_CLIENT
-
 
 @dataclass
 class SarvamTTSOptions:
     api_key: str
-    model: str = "bulbul:v2"
-    voice: str = "vidya"  # compatible voices: vidya, abhilash, manisha, arya, karun, hitesh
+    model: str = "bulbul:v3"
+    voice: str = "priya"
     language_code: str = "en-IN"
     speed: float = 0.92
 
@@ -75,27 +62,27 @@ class SarvamChunkedStream(ChunkedStream):
             return
 
         try:
-            client = _get_http_client()
-            resp = await client.post(
-                _SARVAM_TTS_URL,
-                headers={
-                    "api-subscription-key": opts.api_key,
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "inputs": [self._input_text],
-                    "target_language_code": opts.language_code,
-                    "speaker": opts.voice,
-                    "model": opts.model,
-                    "speech_sample_rate": _SAMPLE_RATE,
-                    "enable_preprocessing": True,
-                    "pace": opts.speed,
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            audio_b64 = data["audios"][0]
-            pcm_bytes = self._wav_b64_to_pcm(audio_b64)
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                resp = await client.post(
+                    _SARVAM_TTS_URL,
+                    headers={
+                        "api-subscription-key": opts.api_key,
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "inputs": [self._input_text],
+                        "target_language_code": opts.language_code,
+                        "speaker": opts.voice,
+                        "model": opts.model,
+                        "speech_sample_rate": _SAMPLE_RATE,
+                        "enable_preprocessing": True,
+                        "pace": opts.speed,
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                audio_b64 = data["audios"][0]
+                pcm_bytes = self._wav_b64_to_pcm(audio_b64)
 
             # Store in cache if small text
             if len(_AUDIO_CACHE) < _MAX_CACHE_SIZE and len(self._input_text) < 200:
@@ -125,8 +112,8 @@ class SarvamTTS(tts.TTS):
         self,
         *,
         api_key: str,
-        model: str = "bulbul:v2",
-        voice: str = "vidya",
+        model: str = "bulbul:v3",
+        voice: str = "priya",
         language: str = "en-IN",
         speed: float = 0.92,
     ) -> None:
